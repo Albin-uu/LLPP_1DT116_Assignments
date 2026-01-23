@@ -66,9 +66,35 @@ void Ped::Model::ompTick() {
   return;
 }
 
+void cppTickInternal(std::vector<Ped::Tagent *> agents, int threadID, int iterationCount) {
+	for (int i = 0; i < agents.size() / iterationCount; i++) {
+		Ped::Tagent *agent = (agents)[threadID * (agents.size() / iterationCount) + i];
+		agent->computeNextDesiredPosition();
+		agent->setX(agent->getDesiredX());
+		agent->setY(agent->getDesiredY());
+		}
+	return;
+}
+
 void Ped::Model::cppTick() {
-  // TODO
-  return;
+	int newThreadsCount = 19;
+	int iterationCount = newThreadsCount + 1;
+	std::thread threads[newThreadsCount];
+
+	for (int threadID = 0; threadID < newThreadsCount; threadID++) {
+		threads[threadID] = std::thread (cppTickInternal, agents, threadID, iterationCount);
+	}
+	// Use main thread for remainder work that thread dispatch didn't do.
+	for (int i = 0; i < agents.size() - ((agents.size() / iterationCount) * (newThreadsCount)); i++) {
+		Ped::Tagent *agent = agents[(newThreadsCount) * (agents.size() / iterationCount) + i];
+		agent->computeNextDesiredPosition();
+		agent->setX(agent->getDesiredX());
+		agent->setY(agent->getDesiredY());
+	}
+	for (int i = 0; i < newThreadsCount; i++) {
+		threads[i].join();
+	}
+    return;
 }
 
 void Ped::Model::tick() {
