@@ -55,12 +55,18 @@ void Ped::Model::sequentialTick() {
   return;
 }
 
-void ompTick() {
-  // TODO
+void Ped::Model::ompTick() {
+#pragma omp parallel for
+  for (int i = 0; i < agents.size(); i++) {
+    Ped::Tagent *agent = agents[i];
+    agent->computeNextDesiredPosition();
+    agent->setX(agent->getDesiredX());
+    agent->setY(agent->getDesiredY());
+  }
   return;
 }
 
-void cppTick() {
+void Ped::Model::cppTick() {
   // TODO
   return;
 }

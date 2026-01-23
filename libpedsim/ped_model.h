@@ -65,6 +65,8 @@ private:
   void move(Ped::Tagent *agent);
 
   void sequentialTick();
+  void ompTick();
+  void cppTick();
 
   ////////////
   /// Everything below here won't be relevant until Assignment 3
