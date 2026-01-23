@@ -42,9 +42,34 @@ void Ped::Model::setup(std::vector<Ped::Tagent*> agentsInScenario, std::vector<T
 	setupHeatmapSeq();
 }
 
+void sequentialTick()
+{
+	//TODO
+	return;
+}
+
+void ompTick()
+{
+	//TODO
+	return;
+}
+
+void cppTick()
+{
+	//TODO
+	return;
+}
+
 void Ped::Model::tick()
 {
-	// EDIT HERE FOR ASSIGNMENT 1
+	if (this->implementation == OMP) {
+		ompTick();
+	} else if (this->implementation == PTHREAD) {
+		cppTick();
+	} else {
+		sequentialTick();
+	}
+	return;
 }
 
 ////////////
