@@ -43,3 +43,6 @@ demo/demo
 
 
 venv
+
+flake.nix
+flake.lock
