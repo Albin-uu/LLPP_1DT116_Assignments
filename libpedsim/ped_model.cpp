@@ -21,91 +21,114 @@
 
 void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
                        std::vector<Twaypoint *> destinationsInScenario,
-                       IMPLEMENTATION implementation) {
+                       // int **positionVectors,
+                       IMPLEMENTATION implementation)
+{
 #ifndef NOCUDA
-  // Convenience test: does CUDA work on this machine?
-  cuda_test();
+    // Convenience test: does CUDA work on this machine?
+    cuda_test();
 #else
-  std::cout << "Not compiled for CUDA" << std::endl;
+    std::cout << "Not compiled for CUDA" << std::endl;
 #endif
 
-  // Set
-  agents = std::vector<Ped::Tagent *>(agentsInScenario.begin(),
-                                      agentsInScenario.end());
+    // Set
+    agents = std::vector<Ped::Tagent *>(agentsInScenario.begin(),
+                                        agentsInScenario.end());
 
-  // Set up destinations
-  destinations = std::vector<Ped::Twaypoint *>(destinationsInScenario.begin(),
-                                               destinationsInScenario.end());
+    // Set up destinations
+    destinations = std::vector<Ped::Twaypoint *>(destinationsInScenario.begin(),
+                                                 destinationsInScenario.end());
 
-  // Sets the chosen implemenation. Standard in the given code is SEQ
-  this->implementation = implementation;
+    // Sets the chosen implemenation. Standard in the given code is SEQ
+    this->implementation = implementation;
 
-  // Set up heatmap (relevant for Assignment 4)
-  setupHeatmapSeq();
+    // Set up heatmap (relevant for Assignment 4)
+    setupHeatmapSeq();
 }
 
-void Ped::Model::sequentialTick() {
-  // TODO
-  for (int i = 0; i < agents.size(); i++) {
-    Ped::Tagent *agent = agents[i];
-    agent->computeNextDesiredPosition();
-    agent->setX(agent->getDesiredX());
-    agent->setY(agent->getDesiredY());
-  }
-  return;
-}
-
-void Ped::Model::ompTick() {
-#pragma omp parallel for
-  for (int i = 0; i < agents.size(); i++) {
-    Ped::Tagent *agent = agents[i];
-    agent->computeNextDesiredPosition();
-    agent->setX(agent->getDesiredX());
-    agent->setY(agent->getDesiredY());
-  }
-  return;
-}
-
-void cppTickInternal(std::vector<Ped::Tagent *> agents, int threadID, int iterationCount) {
-	for (int i = 0; i < agents.size() / iterationCount; i++) {
-		Ped::Tagent *agent = (agents)[threadID * (agents.size() / iterationCount) + i];
-		agent->computeNextDesiredPosition();
-		agent->setX(agent->getDesiredX());
-		agent->setY(agent->getDesiredY());
-		}
-	return;
-}
-
-void Ped::Model::cppTick() {
-	int newThreadsCount = 19;
-	int iterationCount = newThreadsCount + 1;
-	std::thread threads[newThreadsCount];
-
-	for (int threadID = 0; threadID < newThreadsCount; threadID++) {
-		threads[threadID] = std::thread (cppTickInternal, agents, threadID, iterationCount);
-	}
-	// Use main thread for remainder work that thread dispatch didn't do.
-	for (int i = 0; i < agents.size() - ((agents.size() / iterationCount) * (newThreadsCount)); i++) {
-		Ped::Tagent *agent = agents[(newThreadsCount) * (agents.size() / iterationCount) + i];
-		agent->computeNextDesiredPosition();
-		agent->setX(agent->getDesiredX());
-		agent->setY(agent->getDesiredY());
-	}
-	for (int i = 0; i < newThreadsCount; i++) {
-		threads[i].join();
-	}
+void Ped::Model::sequentialTick()
+{
+    for (int i = 0; i < agents.size(); i++)
+    {
+        Ped::Tagent *agent = agents[i];
+        agent->computeNextDesiredPosition();
+        agent->setX(agent->getDesiredX());
+        agent->setY(agent->getDesiredY());
+    }
     return;
 }
 
-void Ped::Model::tick() {
-  if (this->implementation == OMP) {
-    ompTick();
-  } else if (this->implementation == PTHREAD) {
-    cppTick();
-  } else {
-    sequentialTick();
-  }
-  return;
+void Ped::Model::ompTick()
+{
+#pragma omp parallel for num_threads(1)
+    for (int i = 0; i < agents.size(); i++)
+    {
+        Ped::Tagent *agent = agents[i];
+        agent->computeNextDesiredPosition();
+        agent->setX(agent->getDesiredX());
+        agent->setY(agent->getDesiredY());
+    }
+    return;
+}
+
+void cppTickInternal(std::vector<Ped::Tagent *> agents, int threadID,
+                     int iterationCount)
+{
+    for (int i = 0; i < agents.size() / iterationCount; i++)
+    {
+        Ped::Tagent *agent =
+            (agents)[threadID * (agents.size() / iterationCount) + i];
+        agent->computeNextDesiredPosition();
+        agent->setX(agent->getDesiredX());
+        agent->setY(agent->getDesiredY());
+    }
+    return;
+}
+
+void Ped::Model::cppTick()
+{
+    int newThreadsCount = 0;
+    int iterationCount = newThreadsCount + 1;
+    std::thread threads[newThreadsCount];
+
+    for (int threadID = 0; threadID < newThreadsCount; threadID++)
+    {
+        threads[threadID] =
+            std::thread(cppTickInternal, agents, threadID, iterationCount);
+    }
+    // Use main thread for remainder work that thread dispatch didn't do.
+    for (int i = 0; i < agents.size() - ((agents.size() / iterationCount) *
+                                         (newThreadsCount));
+         i++)
+    {
+        Ped::Tagent *agent =
+            agents[(newThreadsCount) * (agents.size() / iterationCount) + i];
+        agent->computeNextDesiredPosition();
+        agent->setX(agent->getDesiredX());
+        agent->setY(agent->getDesiredY());
+    }
+    for (int i = 0; i < newThreadsCount; i++)
+    {
+        threads[i].join();
+    }
+    return;
+}
+
+void Ped::Model::tick()
+{
+    if (this->implementation == OMP)
+    {
+        ompTick();
+    }
+    else if (this->implementation == PTHREAD)
+    {
+        cppTick();
+    }
+    else
+    {
+        sequentialTick();
+    }
+    return;
 }
 
 ////////////
@@ -115,56 +138,63 @@ void Ped::Model::tick() {
 
 // Moves the agent to the next desired position. If already taken, it will
 // be moved to a location close to it.
-void Ped::Model::move(Ped::Tagent *agent) {
-  // Search for neighboring agents
-  set<const Ped::Tagent *> neighbors =
-      getNeighbors(agent->getX(), agent->getY(), 2);
+void Ped::Model::move(Ped::Tagent *agent)
+{
+    // Search for neighboring agents
+    set<const Ped::Tagent *> neighbors =
+        getNeighbors(agent->getX(), agent->getY(), 2);
 
-  // Retrieve their positions
-  std::vector<std::pair<int, int>> takenPositions;
-  for (std::set<const Ped::Tagent *>::iterator neighborIt = neighbors.begin();
-       neighborIt != neighbors.end(); ++neighborIt) {
-    std::pair<int, int> position((*neighborIt)->getX(), (*neighborIt)->getY());
-    takenPositions.push_back(position);
-  }
-
-  // Compute the three alternative positions that would bring the agent
-  // closer to his desiredPosition, starting with the desiredPosition itself
-  std::vector<std::pair<int, int>> prioritizedAlternatives;
-  std::pair<int, int> pDesired(agent->getDesiredX(), agent->getDesiredY());
-  prioritizedAlternatives.push_back(pDesired);
-
-  int diffX = pDesired.first - agent->getX();
-  int diffY = pDesired.second - agent->getY();
-  std::pair<int, int> p1, p2;
-  if (diffX == 0 || diffY == 0) {
-    // Agent wants to walk straight to North, South, West or East
-    p1 = std::make_pair(pDesired.first + diffY, pDesired.second + diffX);
-    p2 = std::make_pair(pDesired.first - diffY, pDesired.second - diffX);
-  } else {
-    // Agent wants to walk diagonally
-    p1 = std::make_pair(pDesired.first, agent->getY());
-    p2 = std::make_pair(agent->getX(), pDesired.second);
-  }
-  prioritizedAlternatives.push_back(p1);
-  prioritizedAlternatives.push_back(p2);
-
-  // Find the first empty alternative position
-  for (std::vector<pair<int, int>>::iterator it =
-           prioritizedAlternatives.begin();
-       it != prioritizedAlternatives.end(); ++it) {
-
-    // If the current position is not yet taken by any neighbor
-    if (std::find(takenPositions.begin(), takenPositions.end(), *it) ==
-        takenPositions.end()) {
-
-      // Set the agent's position
-      agent->setX((*it).first);
-      agent->setY((*it).second);
-
-      break;
+    // Retrieve their positions
+    std::vector<std::pair<int, int>> takenPositions;
+    for (std::set<const Ped::Tagent *>::iterator neighborIt = neighbors.begin();
+         neighborIt != neighbors.end(); ++neighborIt)
+    {
+        std::pair<int, int> position((*neighborIt)->getX(), (*neighborIt)->getY());
+        takenPositions.push_back(position);
     }
-  }
+
+    // Compute the three alternative positions that would bring the agent
+    // closer to his desiredPosition, starting with the desiredPosition itself
+    std::vector<std::pair<int, int>> prioritizedAlternatives;
+    std::pair<int, int> pDesired(agent->getDesiredX(), agent->getDesiredY());
+    prioritizedAlternatives.push_back(pDesired);
+
+    int diffX = pDesired.first - agent->getX();
+    int diffY = pDesired.second - agent->getY();
+    std::pair<int, int> p1, p2;
+    if (diffX == 0 || diffY == 0)
+    {
+        // Agent wants to walk straight to North, South, West or East
+        p1 = std::make_pair(pDesired.first + diffY, pDesired.second + diffX);
+        p2 = std::make_pair(pDesired.first - diffY, pDesired.second - diffX);
+    }
+    else
+    {
+        // Agent wants to walk diagonally
+        p1 = std::make_pair(pDesired.first, agent->getY());
+        p2 = std::make_pair(agent->getX(), pDesired.second);
+    }
+    prioritizedAlternatives.push_back(p1);
+    prioritizedAlternatives.push_back(p2);
+
+    // Find the first empty alternative position
+    for (std::vector<pair<int, int>>::iterator it =
+             prioritizedAlternatives.begin();
+         it != prioritizedAlternatives.end(); ++it)
+    {
+
+        // If the current position is not yet taken by any neighbor
+        if (std::find(takenPositions.begin(), takenPositions.end(), *it) ==
+            takenPositions.end())
+        {
+
+            // Set the agent's position
+            agent->setX((*it).first);
+            agent->setY((*it).second);
+
+            break;
+        }
+    }
 }
 
 /// Returns the list of neighbors within dist of the point x/y. This
@@ -176,21 +206,26 @@ void Ped::Model::move(Ped::Tagent *agent) {
 /// \param   dist the distance around x/y that will be searched for agents
 /// (search field is a square in the current implementation)
 set<const Ped::Tagent *> Ped::Model::getNeighbors(int x, int y,
-                                                  int dist) const {
+                                                  int dist) const
+{
 
-  // create the output list
-  // ( It would be better to include only the agents close by, but this
-  // programmer is lazy.)
-  return set<const Ped::Tagent *>(agents.begin(), agents.end());
+    // create the output list
+    // ( It would be better to include only the agents close by, but this
+    // programmer is lazy.)
+    return set<const Ped::Tagent *>(agents.begin(), agents.end());
 }
 
-void Ped::Model::cleanup() {
-  // Nothing to do here right now.
+void Ped::Model::cleanup()
+{
+    // Nothing to do here right now.
 }
 
-Ped::Model::~Model() {
-  std::for_each(agents.begin(), agents.end(),
-                [](Ped::Tagent *agent) { delete agent; });
-  std::for_each(destinations.begin(), destinations.end(),
-                [](Ped::Twaypoint *destination) { delete destination; });
+Ped::Model::~Model()
+{
+    std::for_each(agents.begin(), agents.end(),
+                  [](Ped::Tagent *agent)
+                  { delete agent; });
+    std::for_each(destinations.begin(), destinations.end(),
+                  [](Ped::Twaypoint *destination)
+                  { delete destination; });
 }

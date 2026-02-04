@@ -24,29 +24,35 @@ using namespace tinyxml2;
 class ParseScenario
 {
 public:
-	ParseScenario() {}
-	ParseScenario(std::string filename, bool verbose = false);
-	~ParseScenario() {}
+    ParseScenario() {}
+    ParseScenario(std::string filename, bool verbose = true);
+    ~ParseScenario() {}
 
-	// returns the collection of agents defined by this scenario
-	vector<Ped::Tagent*> getAgents() const;
+    // returns the collection of agents defined by this scenario
+    vector<Ped::Tagent *> getAgents() const;
 
-	// contains all defined waypoints
-	vector<Ped::Twaypoint*> getWaypoints();
+    int *getAgentX() const;
+    int *getAgentY() const;
+
+    // contains all defined waypoints
+    vector<Ped::Twaypoint *> getWaypoints();
 
 private:
-	XMLDocument doc;
+    XMLDocument doc;
 
-	// final collection of all created agents
-	vector<Ped::Tagent*> agents;
+    // final collection of all created agents
+    vector<Ped::Tagent *> agents;
 
-	// temporary collection of agents used to
-	// keep track of all agents that are generated
-	// within the current opened agents xml tag
-	vector<Ped::Tagent*> tempAgents;
+    int *agentX;
+    int *agentY;
 
-	// contains all defined waypoints
-	map<string, Ped::Twaypoint*> waypoints;
+    // temporary collection of agents used to
+    // keep track of all agents that are generated
+    // within the current opened agents xml tag
+    vector<Ped::Tagent *> tempAgents;
+
+    // contains all defined waypoints
+    map<string, Ped::Twaypoint *> waypoints;
 };
 
 #endif
