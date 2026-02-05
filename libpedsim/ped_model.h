@@ -38,7 +38,7 @@ namespace Ped
         // Sets everything up
         void setup(std::vector<Tagent *> agentsInScenario,
                    std::vector<Twaypoint *> destinationsInScenario,
-                   // int **positionVectors,
+                   void **positionArrays,
                    IMPLEMENTATION implementation);
 
         // Coordinates a time step in the scenario: move all agents by one step (if
@@ -50,6 +50,8 @@ namespace Ped
 
         // Adds an agent to the tree structure
         void placeAgent(const Ped::Tagent *a);
+
+        void freePosArrs();
 
         // Cleans up the tree and restructures it. Worth calling every now and then.
         void cleanup();
@@ -70,6 +72,13 @@ namespace Ped
 
         // The waypoints in this scenario
         std::vector<Twaypoint *> destinations;
+
+        int *agentX;
+        int *agentY;
+        double *destinationX;
+        double *destinationY;
+        int *desiredX;
+        int *desiredY;
 
         // Moves an agent towards its next position
         void move(Ped::Tagent *agent);

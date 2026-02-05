@@ -21,7 +21,7 @@
 
 void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
                        std::vector<Twaypoint *> destinationsInScenario,
-                       // int **positionVectors,
+                       void **positionArrays,
                        IMPLEMENTATION implementation)
 {
 #ifndef NOCUDA
@@ -30,6 +30,14 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
 #else
     std::cout << "Not compiled for CUDA" << std::endl;
 #endif
+
+    agentX = (int *)positionArrays[0];
+    agentY = (int *)positionArrays[1];
+    destinationX = (double *)positionArrays[2];
+    destinationY = (double *)positionArrays[3];
+    desiredX = (int *)positionArrays[4];
+    desiredY = (int *)positionArrays[5];
+    free(positionArrays);
 
     // Set
     agents = std::vector<Ped::Tagent *>(agentsInScenario.begin(),
@@ -46,13 +54,26 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
     setupHeatmapSeq();
 }
 
+void Ped::Model::freePosArrs()
+{
+    free(agentX);
+    free(agentY);
+    free(destinationX);
+    free(destinationY);
+    free(desiredX);
+    free(desiredY);
+}
+
 void Ped::Model::sequentialTick()
 {
     for (int i = 0; i < agents.size(); i++)
     {
+
         Ped::Tagent *agent = agents[i];
         agent->computeNextDesiredPosition();
+
         agent->setX(agent->getDesiredX());
+
         agent->setY(agent->getDesiredY());
     }
     return;
@@ -116,6 +137,7 @@ void Ped::Model::cppTick()
 
 void Ped::Model::tick()
 {
+
     if (this->implementation == OMP)
     {
         ompTick();
@@ -128,6 +150,7 @@ void Ped::Model::tick()
     {
         sequentialTick();
     }
+
     return;
 }
 

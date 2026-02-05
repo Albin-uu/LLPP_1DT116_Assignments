@@ -25,14 +25,13 @@ class ParseScenario
 {
 public:
     ParseScenario() {}
-    ParseScenario(std::string filename, bool verbose = true);
+    ParseScenario(std::string filename, bool verbose = false);
     ~ParseScenario() {}
 
     // returns the collection of agents defined by this scenario
     vector<Ped::Tagent *> getAgents() const;
 
-    int *getAgentX() const;
-    int *getAgentY() const;
+    void **getPositionArrays() const;
 
     // contains all defined waypoints
     vector<Ped::Twaypoint *> getWaypoints();
@@ -43,8 +42,7 @@ private:
     // final collection of all created agents
     vector<Ped::Tagent *> agents;
 
-    int *agentX;
-    int *agentY;
+    void **positionArrays;
 
     // temporary collection of agents used to
     // keep track of all agents that are generated

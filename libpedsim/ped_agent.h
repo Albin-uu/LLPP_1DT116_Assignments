@@ -28,11 +28,11 @@ namespace Ped
     class Tagent
     {
     public:
-        Tagent(int *arrayX, int *arrayY, int agentIdex);
+        Tagent(void **positionArrays, int agentIndex);
 
         // Returns the coordinates of the desired position
-        int getDesiredX() const { return desiredPositionX; }
-        int getDesiredY() const { return desiredPositionY; }
+        int getDesiredX() const { return *desiredPositionX; }
+        int getDesiredY() const { return *desiredPositionY; }
 
         // Sets the agent's position
         void setX(int newX) { *x = newX; }
@@ -57,8 +57,11 @@ namespace Ped
         int *y;
 
         // The agent's desired next position
-        int desiredPositionX;
-        int desiredPositionY;
+        int *desiredPositionX;
+        int *desiredPositionY;
+
+        double *destinationPosX;
+        double *destinationPosY;
 
         // The current destination (may require several steps to reach)
         Twaypoint *destination;
@@ -70,10 +73,10 @@ namespace Ped
         deque<Twaypoint *> waypoints;
 
         // Internal init function
-        void init(int *arrayX, int *arrayY, int agentIdex);
+        void init(void **positionArrays, int agentIdex);
 
         // Returns the next destination to visit
-        Twaypoint *getNextDestination();
+        void setNextDestination();
     };
 } // namespace Ped
 

@@ -22,6 +22,7 @@ bool positionComparator(Ped::Tagent *a, Ped::Tagent *b)
 // Reads in the configuration file, given the filename
 ParseScenario::ParseScenario(std::string filename, bool verbose)
 {
+
     XMLError ret = doc.LoadFile(filename.c_str());
     if (ret != XML_SUCCESS)
     {
@@ -76,9 +77,19 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
         }
 
         tempAgents.clear();
-
-        agentX = (int *)malloc(n * sizeof(int));
-        agentY = (int *)malloc(n * sizeof(int));
+        positionArrays = (void **)malloc(6 * sizeof(void *));
+        int *agentX = (int *)malloc(n * sizeof(int));
+        int *agentY = (int *)malloc(n * sizeof(int));
+        double *destinationX = (double *)malloc(n * sizeof(double));
+        double *destinationY = (double *)malloc(n * sizeof(double));
+        int *desiredX = (int *)malloc(n * sizeof(int));
+        int *desiredY = (int *)malloc(n * sizeof(int));
+        positionArrays[0] = agentX;
+        positionArrays[1] = agentY;
+        positionArrays[2] = destinationX;
+        positionArrays[3] = destinationY;
+        positionArrays[4] = desiredX;
+        positionArrays[5] = desiredY;
         set<long> usedPos{};
         for (int i = 0; i < n; ++i)
         {
@@ -96,7 +107,7 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
             agentX[i] = tempX;
             agentY[i] = tempY;
 
-            Ped::Tagent *a = new Ped::Tagent(agentX, agentY, i);
+            Ped::Tagent *a = new Ped::Tagent(positionArrays, i);
             tempAgents.push_back(a);
         }
 
@@ -132,13 +143,9 @@ vector<Ped::Tagent *> ParseScenario::getAgents() const
     return agents;
 }
 
-int *ParseScenario::getAgentX() const
+void **ParseScenario::getPositionArrays() const
 {
-    return agentX;
-}
-int *ParseScenario::getAgentY() const
-{
-    return agentY;
+    return positionArrays;
 }
 
 std::vector<Ped::Twaypoint *> ParseScenario::getWaypoints()
