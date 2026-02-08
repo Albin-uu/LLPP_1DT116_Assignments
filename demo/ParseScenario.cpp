@@ -59,6 +59,34 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
         waypoints[id] = w;
     }
 
+    // count agents
+    int sum = 0;
+    for (XMLElement *agent = root->FirstChildElement("agent"); agent; agent = agent->NextSiblingElement("agent"))
+    {
+        int n = agent->IntAttribute("n");
+        double dx = agent->DoubleAttribute("dx");
+        double dy = agent->DoubleAttribute("dy");
+        sum += min((int)(dx * dy), n);
+    }
+    // setup underlying arrays
+    positionArrays = (void **)malloc(6 * sizeof(void *));
+    int *agentX = (int *)malloc(sum * sizeof(int));
+    int *agentY = (int *)malloc(sum * sizeof(int));
+    double *destinationX = (double *)malloc(sum * sizeof(double));
+    double *destinationY = (double *)malloc(sum * sizeof(double));
+    int *desiredX = (int *)malloc(sum * sizeof(int));
+    int *desiredY = (int *)malloc(sum * sizeof(int));
+    positionArrays[0] = agentX;
+    positionArrays[1] = agentY;
+    positionArrays[2] = destinationX;
+    positionArrays[3] = destinationY;
+    positionArrays[4] = desiredX;
+    positionArrays[5] = desiredY;
+
+    int agentIndexOffset = 0;
+
+    int deletedNum = 0;
+
     // Parse agents
     if (verbose)
         std::cout << "\nAgents:" << std::endl;
@@ -66,9 +94,11 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
     {
         double x = agent->DoubleAttribute("x");
         double y = agent->DoubleAttribute("y");
-        int n = agent->IntAttribute("n");
         double dx = agent->DoubleAttribute("dx");
         double dy = agent->DoubleAttribute("dy");
+        int n = agent->IntAttribute("n");
+        int liveNum = min((int)(dx * dy), n);
+        deletedNum += n - liveNum;
 
         if (verbose)
         {
@@ -77,21 +107,9 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
         }
 
         tempAgents.clear();
-        positionArrays = (void **)malloc(6 * sizeof(void *));
-        int *agentX = (int *)malloc(n * sizeof(int));
-        int *agentY = (int *)malloc(n * sizeof(int));
-        double *destinationX = (double *)malloc(n * sizeof(double));
-        double *destinationY = (double *)malloc(n * sizeof(double));
-        int *desiredX = (int *)malloc(n * sizeof(int));
-        int *desiredY = (int *)malloc(n * sizeof(int));
-        positionArrays[0] = agentX;
-        positionArrays[1] = agentY;
-        positionArrays[2] = destinationX;
-        positionArrays[3] = destinationY;
-        positionArrays[4] = desiredX;
-        positionArrays[5] = desiredY;
+
         set<long> usedPos{};
-        for (int i = 0; i < n; ++i)
+        for (int i = 0; i < liveNum; ++i)
         {
             int tempX;
             int tempY;
@@ -100,16 +118,18 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
             {
                 tempX = x + rand() / (RAND_MAX / dx) - dx / 2;
                 tempY = y + rand() / (RAND_MAX / dy) - dy / 2;
-                setIndex = (long)tempX << 32 + (long)tempY;
+                setIndex = ((long)tempX << 32) + (long)tempY;
 
             } while (usedPos.find(setIndex) != usedPos.end());
             usedPos.insert(setIndex);
             agentX[i] = tempX;
             agentY[i] = tempY;
-
-            Ped::Tagent *a = new Ped::Tagent(positionArrays, i);
+            int index = agentIndexOffset + i;
+            Ped::Tagent *a = new Ped::Tagent(positionArrays, index);
+            // std::cout << index << std::endl;
             tempAgents.push_back(a);
         }
+        agentIndexOffset += liveNum;
 
         // Parse addwaypoints within each agent
         for (XMLElement *addwaypoint = agent->FirstChildElement("addwaypoint"); addwaypoint; addwaypoint = addwaypoint->NextSiblingElement("addwaypoint"))
@@ -126,6 +146,10 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
         agents.insert(agents.end(), tempAgents.begin(), tempAgents.end());
     }
     tempAgents.clear();
+    if (deletedNum > 0)
+    {
+        std::cout << "Note: removed " << deletedNum << " duplicates from scenario." << std::endl;
+    }
 }
 
 vector<Ped::Tagent *> ParseScenario::getAgents() const
