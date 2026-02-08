@@ -111,31 +111,21 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
             tempAgents.push_back(a);
         }
 
+        // Parse addwaypoints within each agent
+        for (XMLElement *addwaypoint = agent->FirstChildElement("addwaypoint"); addwaypoint; addwaypoint = addwaypoint->NextSiblingElement("addwaypoint"))
+        {
+            std::string id = addwaypoint->Attribute("id");
+            if (verbose)
+                std::cout << "    AddWaypoint ID: " << id << std::endl;
+            for (auto a : tempAgents)
+            {
+                a->addWaypoint(waypoints[id]);
+            }
+        }
+
         agents.insert(agents.end(), tempAgents.begin(), tempAgents.end());
     }
     tempAgents.clear();
-
-    // Hack! Do not allow agents to be on the same position. Remove duplicates from scenario and free the memory.
-    bool (*fn_pt)(Ped::Tagent *, Ped::Tagent *) = positionComparator;
-    std::set<Ped::Tagent *, bool (*)(Ped::Tagent *, Ped::Tagent *)> agentsWithUniquePosition(fn_pt);
-    int duplicates = 0;
-    for (auto agent : agents)
-    {
-        if (agentsWithUniquePosition.find(agent) == agentsWithUniquePosition.end())
-        {
-            agentsWithUniquePosition.insert(agent);
-        }
-        else
-        {
-            delete agent;
-            duplicates += 1;
-        }
-    }
-    if (duplicates > 0)
-    {
-        std::cout << "Note: removed " << duplicates << " duplicates from scenario." << std::endl;
-    }
-    agents = std::vector<Ped::Tagent *>(agentsWithUniquePosition.begin(), agentsWithUniquePosition.end());
 }
 
 vector<Ped::Tagent *> ParseScenario::getAgents() const

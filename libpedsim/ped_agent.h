@@ -31,8 +31,8 @@ namespace Ped
         Tagent(void **positionArrays, int agentIndex);
 
         // Returns the coordinates of the desired position
-        int getDesiredX() const { return *desiredPositionX; }
-        int getDesiredY() const { return *desiredPositionY; }
+        int getDesiredX() { return *desiredPositionX; }
+        int getDesiredY() { return *desiredPositionY; }
 
         // Sets the agent's position
         void setX(int newX) { *x = newX; }
@@ -43,8 +43,8 @@ namespace Ped
         void computeNextDesiredPosition();
 
         // Position of agent defined by x and y
-        int getX() const { return *x; };
-        int getY() const { return *y; };
+        int getX() { return *x; };
+        int getY() { return *y; };
 
         // Adds a new waypoint to reach for this agent
         void addWaypoint(Twaypoint *wp);
