@@ -10,7 +10,7 @@ LIBPEDCUDAOBJECTS=$(LIBPEDSOURCES:.cu=.co)
 TARGET=demo
 INCPATH=-I../libpedsim
 LIBPATH=-L../libpedsim -L/usr/local/cuda/lib64
-CXXFLAGS=-g -fPIC $(INCPATH) $(LIBPATH) -fopenmp -DNOQT
+CXXFLAGS=-g -fPIC $(INCPATH) $(LIBPATH) -fopenmp -DNOQT -DCMAKE_EXPORT_COMPILE_COMMANDS=1
 LIBS = -lpedsim -ltinyxml2
 LDFLAGS+="-Wl,-rpath,$(PWD)/libpedsim,-rpath,$(PWD)/../libpedsim"
 

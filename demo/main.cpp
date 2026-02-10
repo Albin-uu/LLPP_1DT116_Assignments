@@ -217,7 +217,6 @@ int main(int argc, char *argv[])
         }
         else if (export_trace)
         {
-            printf("gggggg");
             Ped::Model model;
             ParseScenario parser(scenefile);
             model.setup(parser.getAgents(), parser.getWaypoints(), parser.getPositionArrays(), implementation_to_test);

@@ -29,7 +29,8 @@ namespace Ped
         VECTOR,
         OMP,
         PTHREAD,
-        SEQ
+        SEQ,
+        SIMD
     };
 
     class Model
@@ -84,6 +85,7 @@ namespace Ped
         void move(Ped::Tagent *agent);
 
         void sequentialTick();
+        void simdTick();
         void ompTick();
         void cppTick();
 

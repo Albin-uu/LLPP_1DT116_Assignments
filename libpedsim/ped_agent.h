@@ -42,6 +42,9 @@ namespace Ped
         // to the current destination
         void computeNextDesiredPosition();
 
+        // Returns the next destination to visit
+        void setNextDestination();
+
         // Position of agent defined by x and y
         int getX() const { return *x; };
         int getY() const { return *y; };
@@ -75,8 +78,8 @@ namespace Ped
         // Internal init function
         void init(void **positionArrays, int agentIdex);
 
-        // Returns the next destination to visit
-        void setNextDestination();
+
+
     };
 } // namespace Ped
 
