@@ -76,12 +76,14 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
     int *agentY;
     double *destinationX;
     double *destinationY;
+    int *desiredX;
+    int *desiredY;
+    assert(0 == posix_memalign((void **)&agentX, 32, sum * sizeof(int)));
+    assert(0 == posix_memalign((void **)&agentY, 32, sum * sizeof(int)));
     assert(0 == posix_memalign((void **)&destinationX, 32, sum * sizeof(double)));
     assert(0 == posix_memalign((void **)&destinationY, 32, sum * sizeof(double)));
-    assert(0 == posix_memalign((void **)&agentX, 8, sum * sizeof(int)));
-    assert(0 == posix_memalign((void **)&agentY, 8, sum * sizeof(int)));
-    int *desiredX = (int *)malloc(sum * sizeof(int));
-    int *desiredY = (int *)malloc(sum * sizeof(int));
+    assert(0 == posix_memalign((void **)&desiredX, 32, sum * sizeof(int)));
+    assert(0 == posix_memalign((void **)&desiredY, 32, sum * sizeof(int)));
     positionArrays[0] = agentX;
     positionArrays[1] = agentY;
     positionArrays[2] = destinationX;

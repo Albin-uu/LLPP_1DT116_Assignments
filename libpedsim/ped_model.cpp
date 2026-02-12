@@ -190,13 +190,13 @@ void Ped::Model::tick()
     {
         cppTick();
     }
-    else if (this->implementation == SIMD)
+    else if (this->implementation == VECTOR || this->implementation == SIMD)
     {
         simdTick();
     }
     else
     {
-        simdTick();
+      sequentialTick();
     }
 
     return;

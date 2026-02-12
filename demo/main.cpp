@@ -10,8 +10,6 @@
 #include "ped_model.h"
 #include "ParseScenario.h"
 
-#include <thread>
-
 #include "Simulation.h"
 #include "TimingSimulation.h"
 #include "ExportSimulation.h"
