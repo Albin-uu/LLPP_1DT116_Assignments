@@ -9,6 +9,8 @@
 #include <string>
 #include <iostream>
 #include <set>
+#include <assert.h>
+#include <cstdlib>
 
 #include <stdlib.h>
 
@@ -70,10 +72,14 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
     }
     // setup underlying arrays
     positionArrays = (void **)malloc(6 * sizeof(void *));
-    int *agentX = (int *)malloc(sum * sizeof(int));
-    int *agentY = (int *)malloc(sum * sizeof(int));
-    double *destinationX = (double *)malloc(sum * sizeof(double));
-    double *destinationY = (double *)malloc(sum * sizeof(double));
+    int *agentX;
+    int *agentY;
+    double *destinationX;
+    double *destinationY;
+    assert(0 == posix_memalign((void **)&destinationX, 32, sum * sizeof(double)));
+    assert(0 == posix_memalign((void **)&destinationY, 32, sum * sizeof(double)));
+    assert(0 == posix_memalign((void **)&agentX, 8, sum * sizeof(int)));
+    assert(0 == posix_memalign((void **)&agentY, 8, sum * sizeof(int)));
     int *desiredX = (int *)malloc(sum * sizeof(int));
     int *desiredY = (int *)malloc(sum * sizeof(int));
     positionArrays[0] = agentX;
