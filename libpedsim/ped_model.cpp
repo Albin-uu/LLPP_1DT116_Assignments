@@ -93,8 +93,8 @@ void Ped::Model::simdTick()
 
         __m256d destX = _mm256_load_pd(&destinationX[i]);
         __m256d destY = _mm256_load_pd(&destinationY[i]);
-        __m128i posX = _mm_loadu_si32(&agentX[i]);
-        __m128i posY = _mm_loadu_si32(&agentY[i]);
+        __m128i posX = _mm_loadu_si128((__m128i *)&agentX[i]);
+        __m128i posY = _mm_loadu_si128((__m128i *)&agentY[i]);
 
         __m256d posXD = _mm256_cvtepi32_pd(posX);
         __m256d posYD = _mm256_cvtepi32_pd(posY);
@@ -115,10 +115,10 @@ void Ped::Model::simdTick()
         __m128i desireX = _mm256_cvtpd_epi32(desiredXD);
         __m128i desireY = _mm256_cvtpd_epi32(desiredYD);
 
-        _mm_storeu_si32(&desiredX[i], desireX);
-        _mm_storeu_si32(&desiredY[i], desireY);
-        _mm_storeu_si32(&agentX[i], desireX);
-        _mm_storeu_si32(&agentY[i], desireY);
+        _mm_storeu_si128((__m128i *)&desiredX[i], desireX);
+        _mm_storeu_si128((__m128i *)&desiredY[i], desireY);
+        _mm_storeu_si128((__m128i *)&agentX[i], desireX);
+        _mm_storeu_si128((__m128i *)&agentY[i], desireY);
     }
     return;
 }
