@@ -10,6 +10,7 @@
 #include <math.h>
 #include <iostream>
 
+#include <pthread.h>
 #include <stdlib.h>
 
 Ped::Tagent::Tagent(void **positionArrays,
@@ -21,7 +22,7 @@ Ped::Tagent::Tagent(void **positionArrays,
 void Ped::Tagent::init(void **positionArrays,
 					   int agentIndex)
 {
-	x = ((int *)positionArrays[0]) + agentIndex;
+	x = ((int *)positionArrays[0])+agentIndex;
 	y = ((int *)positionArrays[1]) + agentIndex;
 	destinationPosX = &((double *)positionArrays[2])[agentIndex];
 	destinationPosY = &((double *)positionArrays[3])[agentIndex];

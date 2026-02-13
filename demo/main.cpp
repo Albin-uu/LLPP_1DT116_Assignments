@@ -219,6 +219,7 @@ int main(int argc, char *argv[])
             ParseScenario parser(scenefile);
             model.setup(parser.getAgents(), parser.getWaypoints(), parser.getPositionArrays(), implementation_to_test);
 
+
             Simulation *simulation = new ExportSimulation(model, max_steps, export_trace_file);
 
             std::cout << "Running Export Tracer...\n";

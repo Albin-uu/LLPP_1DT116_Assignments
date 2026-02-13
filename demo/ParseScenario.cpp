@@ -1,4 +1,3 @@
-//
 // pedsim - A microscopic pedestrian simulation system.
 // Copyright (c) 2003 - 2014 by Christian Gloor
 //
@@ -6,6 +5,7 @@
 // Modified in 2025 to remove QT's XML parser and used TinyXML2 instead.
 
 #include "ParseScenario.h"
+#include <cstdio>
 #include <string>
 #include <iostream>
 #include <set>
@@ -119,6 +119,7 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
         set<long> usedPos{};
         for (int i = 0; i < liveNum; ++i)
         {
+            
             int tempX;
             int tempY;
             long setIndex;
@@ -130,11 +131,10 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
 
             } while (usedPos.find(setIndex) != usedPos.end());
             usedPos.insert(setIndex);
-            agentX[i] = tempX;
-            agentY[i] = tempY;
+            agentX[agentIndexOffset + i] = tempX;
+            agentY[agentIndexOffset + i] = tempY;
             int index = agentIndexOffset + i;
             Ped::Tagent *a = new Ped::Tagent(positionArrays, index);
-            // std::cout << index << std::endl;
             tempAgents.push_back(a);
         }
         agentIndexOffset += liveNum;

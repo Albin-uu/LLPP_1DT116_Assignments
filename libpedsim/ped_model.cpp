@@ -8,6 +8,7 @@
 #include "ped_model.h"
 #include "ped_waypoint.h"
 #include <algorithm>
+#include <cstdio>
 #include <iostream>
 #include <omp.h>
 #include <stack>
@@ -44,7 +45,6 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
     // Set
     agents = std::vector<Ped::Tagent *>(agentsInScenario.begin(),
                                         agentsInScenario.end());
-
     // Set up destinations
     destinations = std::vector<Ped::Twaypoint *>(destinationsInScenario.begin(),
                                                  destinationsInScenario.end());
