@@ -21,6 +21,7 @@
 #endif
 
 #include <stdlib.h>
+#include <unistd.h>
 
 void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
                        std::vector<Twaypoint *> destinationsInScenario,
@@ -104,7 +105,7 @@ void Ped::Model::simdTick()
 
         __m256d squaredDiffX = _mm256_mul_pd(diffX, diffX);
         __m256d squaredSum = _mm256_fmadd_pd(diffY, diffY, squaredDiffX);
-        __m256d length = _mm256_sqrt_pd(squaredDiffX);
+        __m256d length = _mm256_sqrt_pd(squaredSum);
 
         __m256d normDiffX = _mm256_div_pd(diffX, length);
         __m256d normDiffY = _mm256_div_pd(diffY, length);
@@ -112,8 +113,11 @@ void Ped::Model::simdTick()
         __m256d desiredXD = _mm256_add_pd(posXD, normDiffX);
         __m256d desiredYD = _mm256_add_pd(posYD, normDiffY);
 
-        __m128i desireX = _mm256_cvtpd_epi32(desiredXD);
-        __m128i desireY = _mm256_cvtpd_epi32(desiredYD);
+        __m256d roundedX = _mm256_round_pd(desiredXD, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        __m256d roundedY = _mm256_round_pd(desiredYD, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+
+        __m128i desireX = _mm256_cvtpd_epi32(roundedX);
+        __m128i desireY = _mm256_cvtpd_epi32(roundedY);
 
         _mm_storeu_si128((__m128i *)&desiredX[i], desireX);
         _mm_storeu_si128((__m128i *)&desiredY[i], desireY);
@@ -196,7 +200,7 @@ void Ped::Model::tick()
     }
     else
     {
-      sequentialTick();
+        sequentialTick();
     }
 
     return;

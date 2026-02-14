@@ -68,8 +68,13 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
         int n = agent->IntAttribute("n");
         double dx = agent->DoubleAttribute("dx");
         double dy = agent->DoubleAttribute("dy");
-        sum += min((int)(dx * dy), n);
+        sum += min((int)((dx + 1) * (dy + 1)), n);
     }
+    // make a step len of 4 when running simd solution never go out of bound
+    // shouldn't make any difference for the both scenario and hugescenario
+    // as the number of agents they spawn are already divisible by 4
+    sum += 3 - ((sum - 1) & 3);
+
     // setup underlying arrays
     positionArrays = (void **)malloc(6 * sizeof(void *));
     int *agentX;
@@ -105,7 +110,7 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
         double dx = agent->DoubleAttribute("dx");
         double dy = agent->DoubleAttribute("dy");
         int n = agent->IntAttribute("n");
-        int liveNum = min((int)(dx * dy), n);
+        int liveNum = min((int)((dx + 1) * (dy + 1)), n);
         deletedNum += n - liveNum;
 
         if (verbose)
@@ -119,14 +124,14 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
         set<long> usedPos{};
         for (int i = 0; i < liveNum; ++i)
         {
-            
+
             int tempX;
             int tempY;
             long setIndex;
             do
             {
-                tempX = x + rand() / (RAND_MAX / dx) - dx / 2;
-                tempY = y + rand() / (RAND_MAX / dy) - dy / 2;
+                tempX = x + (rand() % (int)(dx + 1)) - dx / 2;
+                tempY = y + (rand() % (int)(dy + 1)) - dy / 2;
                 setIndex = ((long)tempX << 32) + (long)tempY;
 
             } while (usedPos.find(setIndex) != usedPos.end());
@@ -157,6 +162,15 @@ ParseScenario::ParseScenario(std::string filename, bool verbose)
     if (deletedNum > 0)
     {
         std::cout << "Note: removed " << deletedNum << " duplicates from scenario." << std::endl;
+    }
+    for (int i = agentIndexOffset; i < sum; i++)
+    {
+        agentX[i] = 0;
+        agentY[i] = 0;
+        destinationX[i] = 0;
+        destinationY[i] = 0;
+        desiredX[i] = 0;
+        desiredY[i] = 0;
     }
 }
 
