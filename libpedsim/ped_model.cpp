@@ -77,7 +77,6 @@ void Ped::Model::sequentialTick()
         agent->setX(agent->getDesiredX());
         agent->setY(agent->getDesiredY());
     }
-    return;
 }
 
 void Ped::Model::collisionSequentialTick()
@@ -89,10 +88,9 @@ void Ped::Model::collisionSequentialTick()
 
         move(agent);
     }
-    return;
 }
 
-void Ped::Model::collisionParallelTick()
+void Ped::Model::collisionOMPTick()
 {
     for (int i = 0; i < agents.size(); i++)
     {
@@ -102,7 +100,54 @@ void Ped::Model::collisionParallelTick()
         // TODO
         move(agent);
     }
-    return;
+    std::cout << "collisionOMPTick ran once" << std::endl;
+}
+
+void Ped::Model::collisionOMPSIMDTick()
+{
+    for (int i = 0; i < agents.size(); i++)
+    {
+        Ped::Tagent *agent = agents[i];
+        agent->setNextDestination();
+    }
+    for (int i = 0; i < agents.size(); i += 4)
+    {
+
+        __m256d destX = _mm256_load_pd(&destinationX[i]);
+        __m256d destY = _mm256_load_pd(&destinationY[i]);
+        __m128i posX = _mm_loadu_si128((__m128i *)&agentX[i]);
+        __m128i posY = _mm_loadu_si128((__m128i *)&agentY[i]);
+
+        __m256d posXD = _mm256_cvtepi32_pd(posX);
+        __m256d posYD = _mm256_cvtepi32_pd(posY);
+
+        __m256d diffX = _mm256_sub_pd(destX, posXD);
+        __m256d diffY = _mm256_sub_pd(destY, posYD);
+
+        __m256d squaredDiffX = _mm256_mul_pd(diffX, diffX);
+        __m256d squaredSum = _mm256_fmadd_pd(diffY, diffY, squaredDiffX);
+        __m256d length = _mm256_sqrt_pd(squaredSum);
+
+        __m256d normDiffX = _mm256_div_pd(diffX, length);
+        __m256d normDiffY = _mm256_div_pd(diffY, length);
+
+        __m256d desiredXD = _mm256_add_pd(posXD, normDiffX);
+        __m256d desiredYD = _mm256_add_pd(posYD, normDiffY);
+
+        __m256d roundedX = _mm256_round_pd(desiredXD, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        __m256d roundedY = _mm256_round_pd(desiredYD, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+
+        __m128i desireX = _mm256_cvtpd_epi32(roundedX);
+        __m128i desireY = _mm256_cvtpd_epi32(roundedY);
+
+        // Unlike simdTick() don't set x and y here.
+    }
+    // TODO
+    for (int i = 0; i < agents.size(); i++)
+    {
+        move(agents[i]);
+    }
+    std::cout << "collisionOMPSIMDTick ran once" << std::endl;
 }
 
 void Ped::Model::simdTick()
@@ -148,7 +193,6 @@ void Ped::Model::simdTick()
         _mm_storeu_si128((__m128i *)&agentX[i], desireX);
         _mm_storeu_si128((__m128i *)&agentY[i], desireY);
     }
-    return;
 }
 
 void Ped::Model::ompTick()
@@ -161,7 +205,6 @@ void Ped::Model::ompTick()
         agent->setX(agent->getDesiredX());
         agent->setY(agent->getDesiredY());
     }
-    return;
 }
 
 void cppTickInternal(std::vector<Ped::Tagent *> agents, int threadID,
@@ -175,7 +218,6 @@ void cppTickInternal(std::vector<Ped::Tagent *> agents, int threadID,
         agent->setX(agent->getDesiredX());
         agent->setY(agent->getDesiredY());
     }
-    return;
 }
 
 void Ped::Model::cppTick()
@@ -204,7 +246,6 @@ void Ped::Model::cppTick()
     {
         threads[i].join();
     }
-    return;
 }
 
 void Ped::Model::tick()
@@ -227,16 +268,18 @@ void Ped::Model::tick()
         collisionSequentialTick();
 
     }
-    else if (this->implementation == COLLISION_PARA)
+    else if (this->implementation == COLLISION_OMP)
     {
-        collisionParallelTick();
+        collisionOMPTick();
+    }
+    else if (this->implementation == COLLISION_OMP_SIMD)
+    {
+        collisionOMPSIMDTick();
     }
     else
     {
         sequentialTick();
     }
-
-    return;
 }
 
 ////////////
