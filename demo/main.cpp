@@ -74,8 +74,9 @@ int main(int argc, char *argv[])
             {"omp", no_argument, NULL, 'o'},
             {"pthread", no_argument, NULL, 'p'},
             {"seq", no_argument, NULL, 'q'},
-            {"cseq", no_argument, NULL, 'y'},
-            {"cpara", no_argument, NULL, 'z'},
+            {"cseq", no_argument, NULL, 'x'},
+            {"comp", no_argument, NULL, 'y'},
+            {"compsimd", no_argument, NULL, 'z'},
             {0, 0, 0, 0} // End of options
         };
 
@@ -140,16 +141,20 @@ int main(int argc, char *argv[])
             std::cout << "Option --seq activated\n";
             implementation_to_test = Ped::SEQ;
             break;
-        case 'y':
+        case 'x':
             // Handle --cseq
             std::cout << "Option --cseq activated\n";
             implementation_to_test = Ped::COLLISION_SEQ;
             break;
-        case 'z':
-            // Handle --cpara
-            std::cout << "Option --cpara activated\n";
-            implementation_to_test = Ped::COLLISION_PARA;
+        case 'y':
+            // Handle --comp
+            std::cout << "Option --comp activated\n";
+            implementation_to_test = Ped::COLLISION_OMP;
             break;
+        case 'z':
+            // Handle --compsimd
+            std::cout << "Option --compsimd activated\n";
+            implementation_to_test = Ped::COLLISION_OMP_SIMD;
         case 'm':
             // Handle --max-steps with a numerical argument
             max_steps = std::stoi(optarg); // Convert the argument to an integer

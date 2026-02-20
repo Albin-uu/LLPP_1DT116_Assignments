@@ -31,7 +31,8 @@ namespace Ped
         PTHREAD,
         SEQ,
         COLLISION_SEQ,
-        COLLISION_PARA
+        COLLISION_OMP,
+        COLLISION_OMP_SIMD
     };
 
     class Model
@@ -86,11 +87,12 @@ namespace Ped
         void move(Ped::Tagent *agent);
 
         void sequentialTick();
-        void collisionSequentialTick();
-        void collisionParallelTick();
         void simdTick();
         void ompTick();
         void cppTick();
+        void collisionSequentialTick();
+        void collisionOMPTick();
+        void collisionOMPSIMDTick();
 
         ////////////
         /// Everything below here won't be relevant until Assignment 3
