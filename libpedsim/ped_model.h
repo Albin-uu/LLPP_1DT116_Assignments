@@ -30,7 +30,8 @@ namespace Ped
         OMP,
         PTHREAD,
         SEQ,
-        SIMD
+        COLLISION_SEQ,
+        COLLISION_PARA
     };
 
     class Model
@@ -85,6 +86,8 @@ namespace Ped
         void move(Ped::Tagent *agent);
 
         void sequentialTick();
+        void collisionSequentialTick();
+        void collisionParallelTick();
         void simdTick();
         void ompTick();
         void cppTick();
