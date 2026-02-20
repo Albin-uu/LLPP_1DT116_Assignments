@@ -75,8 +75,32 @@ void Ped::Model::sequentialTick()
         agent->computeNextDesiredPosition();
 
         agent->setX(agent->getDesiredX());
-
         agent->setY(agent->getDesiredY());
+    }
+    return;
+}
+
+void Ped::Model::collisionSequentialTick()
+{
+    for (int i = 0; i < agents.size(); i++)
+    {
+        Ped::Tagent *agent = agents[i];
+        agent->computeNextDesiredPosition();
+
+        move(agent);
+    }
+    return;
+}
+
+void Ped::Model::collisionParallelTick()
+{
+    for (int i = 0; i < agents.size(); i++)
+    {
+        Ped::Tagent *agent = agents[i];
+        agent->computeNextDesiredPosition();
+
+        // TODO
+        move(agent);
     }
     return;
 }
@@ -194,9 +218,18 @@ void Ped::Model::tick()
     {
         cppTick();
     }
-    else if (this->implementation == VECTOR || this->implementation == SIMD)
+    else if (this->implementation == VECTOR)
     {
         simdTick();
+    }
+    else if (this->implementation == COLLISION_SEQ)
+    {
+        collisionSequentialTick();
+
+    }
+    else if (this->implementation == COLLISION_PARA)
+    {
+        collisionParallelTick();
     }
     else
     {
