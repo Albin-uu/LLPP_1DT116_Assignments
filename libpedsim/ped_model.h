@@ -12,10 +12,12 @@
 #define _ped_model_h_
 
 #include <map>
+#include <mutex>
 #include <set>
 #include <vector>
 
 #include "ped_agent.h"
+#include "ped_region.h"
 
 namespace Ped
 {
@@ -75,6 +77,9 @@ namespace Ped
 
         // The waypoints in this scenario
         std::vector<Twaypoint *> destinations;
+
+        // Regions for collision versions.
+        std::vector<Tregion *> regions;
 
         int *agentX;
         int *agentY;

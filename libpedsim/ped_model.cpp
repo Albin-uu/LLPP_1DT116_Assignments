@@ -6,15 +6,16 @@
 // Adapted for Low Level Parallel Programming 2017
 //
 #include "ped_model.h"
+#include "ped_agent.h"
 #include "ped_waypoint.h"
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
 #include <omp.h>
-#include <stack>
 #include <emmintrin.h>
 #include <immintrin.h>
 #include <thread>
+#include <vector>
 
 #ifndef NOCDUA
 #include "cuda_testkernel.h"
@@ -49,6 +50,9 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
     // Set up destinations
     destinations = std::vector<Ped::Twaypoint *>(destinationsInScenario.begin(),
                                                  destinationsInScenario.end());
+    // Regions to manage, each region gets assigned to one thread.
+    regions = std::vector<Ped::Tregion *>();
+    // TODO actually set this, set in parser and input as arg here?
 
     // Sets the chosen implemenation. Standard in the given code is SEQ
     this->implementation = implementation;
@@ -92,15 +96,37 @@ void Ped::Model::collisionSequentialTick()
 
 void Ped::Model::collisionOMPTick()
 {
-    for (int i = 0; i < agents.size(); i++)
+    // Reset hasMoved that were set on previous tick.
+    for (int i = 0; i < agents.size(); i++) // TODO OMP?
     {
-        Ped::Tagent *agent = agents[i];
-        agent->computeNextDesiredPosition();
-
-        // TODO
-        move(agent);
+        agents[i]->setHasMoved(false);
     }
-    std::cout << "collisionOMPTick ran once" << std::endl;
+
+    for (Ped::Tregion *region : regions) { // TODO OMP
+        Tagent *agent = region->getNext();
+        while (agent != NULL) {
+            agent->computeNextDesiredPosition();
+
+            std::vector<std::pair<int, int>> prioritizedPositions(3);
+            std::vector<std::pair<int, int>> prioritizedRegions(3);
+            bool isSuccessfulMove = false;
+
+            // Compute which region the agent wants to move to.
+            // TODO compute 3 different alternatives.
+            Tregion *newRegion = regions[0]; // TODO
+
+            for (int i = 0; i < prioritizedPositions.size() && isSuccessfulMove == false; i++) {
+                if (region->getId() == newRegion->getId()) {
+                    isSuccessfulMove = region->moveAgentInternally();
+                } else {
+                    isSuccessfulMove = region->moveAgentExternally(newRegion);
+                }
+            }
+
+            agent = region->getNext();
+        }
+    }
+    // std::cout << "collisionOMPTick ran once" << std::endl;
 }
 
 void Ped::Model::collisionOMPSIMDTick()

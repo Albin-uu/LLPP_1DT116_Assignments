@@ -8,7 +8,6 @@
 #include "ped_agent.h"
 #include "ped_waypoint.h"
 #include <math.h>
-#include <iostream>
 
 #include <pthread.h>
 #include <stdlib.h>

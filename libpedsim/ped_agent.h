@@ -52,6 +52,18 @@ namespace Ped
         // Adds a new waypoint to reach for this agent
         void addWaypoint(Twaypoint *wp);
 
+        //gets the next agent
+        Tagent *getNextAgent();
+
+        //gets a pointer to the nextAgent field
+        Tagent **getNextAgentField();
+
+        //sets the next agent to the agent chosen
+        Tagent *setNextAgent(Tagent *next_agent);
+
+        bool getHasMoved() { return hasMoved; }
+        void setHasMoved(bool hasMoved) { hasMoved = hasMoved; }
+
     private:
         Tagent() {};
 
@@ -78,7 +90,10 @@ namespace Ped
         // Internal init function
         void init(void **positionArrays, int agentIdex);
 
+        //next agent in list
+        Tagent *next_agent;
 
+        bool hasMoved = false;
 
     };
 } // namespace Ped
