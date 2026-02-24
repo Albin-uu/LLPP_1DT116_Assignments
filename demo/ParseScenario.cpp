@@ -11,7 +11,6 @@
 #include <set>
 #include <assert.h>
 #include <cstdlib>
-
 #include <stdlib.h>
 
 // Comparator used to identify if two agents differ in their position

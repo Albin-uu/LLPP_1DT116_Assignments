@@ -8,8 +8,10 @@ namespace Ped
     {
         public:
 
+        Tregion();
+
         //gets the regions id
-        int getId() {return id;};
+        string getId() {return id;};
 
         //moves on to the next agent and gets it
         Ped::Tagent *getNext();
@@ -18,13 +20,13 @@ namespace Ped
         Ped::Tagent *getStart();
 
         //move current agent to another region
-        bool moveAgentExternally(Tregion *region);
+        bool moveAgentExternally(Tregion *region, std::pair<int, int> position);
 
         // Move within the same region.
-        bool moveAgentInternally();
+        bool moveAgentInternally(std::pair<int, int> position);
 
 
-        bool isAvaliable(int x, int y);
+        bool isAvailable(int x, int y);
 
         //finds out whether position is in this region
         //bool isInRegion(int x, int y);
@@ -42,18 +44,20 @@ namespace Ped
         private:
 
         Ped::Tagent * pop();
+        string get_uuid();
 
         //int greaterRegion;
         //int xStart;
         //int xEnd;
-        int id;
+        string id = get_uuid();
 
-        Ped::Tagent *current;
-        Ped::Tagent **previous;
+
+        Ped::Tagent *current = NULL;
+        Ped::Tagent **previous = NULL;
 
         std::mutex agentsLock;
-        Ped::Tagent *startAgent;
-        Ped::Tagent *endAgent;
+        Ped::Tagent *startAgent = NULL;
+        Ped::Tagent *endAgent = NULL;
 
     };
 }
