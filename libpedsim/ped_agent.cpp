@@ -29,6 +29,7 @@ void Ped::Tagent::init(void **positionArrays,
 	desiredPositionY = ((int *)positionArrays[5]) + agentIndex;
 	destination = NULL;
 	lastDestination = NULL;
+	next_agent = NULL;
 }
 
 void Ped::Tagent::computeNextDesiredPosition()
@@ -47,6 +48,21 @@ void Ped::Tagent::computeNextDesiredPosition()
 	double len = sqrt(diffX * diffX + diffY * diffY);
 	*desiredPositionX = (int)round(*x + diffX / len);
 	*desiredPositionY = (int)round(*y + diffY / len);
+}
+
+Ped::Tagent *Ped::Tagent::getNextAgent(){
+    return this->next_agent;
+}
+
+//gets a pointer to the nextAgent field
+Ped::Tagent **Ped::Tagent::getNextAgentField(){
+    return &this->next_agent;
+}
+
+//sets the next agent to the agent chosen
+Ped::Tagent *Ped::Tagent::setNextAgent(Tagent *next_agent){
+    this->next_agent = next_agent;
+    return next_agent;
 }
 
 void Ped::Tagent::addWaypoint(Twaypoint *wp) { waypoints.push_back(wp); }

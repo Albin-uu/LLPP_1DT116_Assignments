@@ -19,18 +19,22 @@ Ped::Tagent *Ped::Tregion::getStart() {
 
 
 Ped::Tagent *Ped::Tregion::getNext() {
+    if (this->current == NULL) {
+        return NULL;
+    }
     getLock();
     do {
-        if (current == NULL) {
+        Tagent *oldCurrent = this->current;
+        this->current = this->current->getNextAgent();
+        this->previous = oldCurrent->getNextAgentField();
+        if (this->current == NULL) {
             unlockLock();
             return NULL;
         }
-        current = current->getNextAgent();
-        previous = current->getNextAgentField();
-    } while(current->getHasMoved());
+    } while(this->current->getHasMoved());
 
     unlockLock();
-    return current;
+    return this->current;
 }
 
 
