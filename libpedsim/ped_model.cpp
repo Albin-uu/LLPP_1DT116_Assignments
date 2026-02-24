@@ -56,7 +56,7 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
     regions = std::vector<Ped::Tregion *>(noOfRegions);
     for (int i = 0; i < regions.size(); i++)
     {
-        regions[i] = new Tregion();
+        regions[i] = new Tregion(i);
     }
 
     for (int i = 0; i < agents.size(); i++)
@@ -87,11 +87,11 @@ Ped::Tregion *Ped::Model::calculateRegion(int x, int y)
 {
     //assuming horizontal stripes
     int rem = y % REGION_HEIGHT;
+    if (rem < 0) { rem += REGION_HEIGHT; }
     //printf("%d\n", y);
     //printf("%d\n", rem);
-    int index = ((y - rem) / REGION_HEIGHT) - 1;
+    int index = ((y - rem) / REGION_HEIGHT); // Tog bort -1, tror att det ska vara så här
     //printf("%d\n", index);
-    if (index < 0) { index += REGION_HEIGHT; }
     return this->regions[index];
 }
 
@@ -130,8 +130,8 @@ void Ped::Model::collisionOMPTick()
     #pragma omp parallel for schedule(dynamic) shared(regions)
     for (Ped::Tregion *region : regions)
     {
-
-        for (Tagent *agent = region->getStart(); agent != NULL; agent = region->getNext()) {
+        for (Tagent *agent = region->getStart(); agent != NULL; agent = region->getNext())
+        {
             agent->computeNextDesiredPosition();
             // Compute which region the agent wants to move to (3 times).
             std::vector<std::pair<int, int>> alternativePositions;
@@ -163,10 +163,14 @@ void Ped::Model::collisionOMPTick()
                 //printf("%d %d\n", alternativePositions[i].first, alternativePositions[i].second);
                 //printf("%d %d\n", pDesired.first, pDesired.second);
                 Tregion *newRegion = calculateRegion(alternativePositions[i].first, alternativePositions[i].second);
-                //if (region->getId() == newRegion->getId())
-                std::cout << region->getId() << std::endl;
+                printf("first: %d\n", alternativePositions[i].first);
+                printf("second: %d\n", alternativePositions[i].second);
+                //std::cout << region->getId() << std::endl;
                 //std::cout << newRegion->getId() << std::endl;
-                if (region->getId().compare(newRegion->getId()) == 0)
+                printf("newregion: %p\n", newRegion);
+                printf("region: %p\n", region);
+                //if (region->getId().compare(newRegion->getId()) == 0)
+                if (region->getId() == newRegion->getId())
                 {
                     isSuccessfulMove = region->moveAgentInternally(alternativePositions[i]);
                 }

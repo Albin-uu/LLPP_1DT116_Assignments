@@ -45,9 +45,9 @@ void Ped::Tregion::append( Ped::Tagent *agent) {
     }
 
     if(endAgent != NULL) {
-    endAgent->setNextAgent(agent);
+    this->endAgent->setNextAgent(agent);
     }
-    endAgent = agent;
+    this->endAgent = agent;
     agent->setNextAgent(NULL);
 }
 

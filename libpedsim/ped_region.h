@@ -12,10 +12,11 @@ namespace Ped
     {
         public:
 
-        Tregion(){};
+        Tregion(int id){this->id = id;};
 
         //gets the regions id
-        string getId() {return this->id;};
+        //string getId() {return this->id;};
+        int getId() {return this->id;};
 
         //moves on to the next agent and gets it
         Ped::Tagent *getNext();
@@ -53,7 +54,8 @@ namespace Ped
         //int greaterRegion;
         //int xStart;
         //int xEnd;
-        string id = get_uuid();
+        //const string id = get_uuid();
+        int id;
 
 
         Ped::Tagent *current = NULL;
