@@ -2,6 +2,10 @@
 
 #include "ped_agent.h"
 #include <mutex>
+
+
+#define REGION_HEIGHT 10 //temp width macro
+
 namespace Ped
 {
     class Tregion
