@@ -55,6 +55,10 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
     // Regions to manage, each region gets assigned to one thread.
     int noOfRegions = 120/REGION_HEIGHT; //total height is 120, need total height/height per region regions
     regions = std::vector<Ped::Tregion *>(noOfRegions);
+    for (int i = 0; i < regions.size(); i++)
+    {
+        regions[i] = new Tregion();
+    }
 
     for (int i = 0; i < agents.size(); i++)
     {
@@ -167,7 +171,7 @@ void Ped::Model::collisionOMPTick()
 
         }
     }
-    std::cout << "collisionOMPTick ran once" << std::endl;
+    // std::cout << "collisionOMPTick ran once" << std::endl;
 }
 
 void Ped::Model::collisionOMPSIMDTick()

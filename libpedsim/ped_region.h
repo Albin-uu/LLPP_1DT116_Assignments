@@ -8,7 +8,7 @@ namespace Ped
     {
         public:
 
-        Tregion();
+        Tregion(){};
 
         //gets the regions id
         string getId() {return id;};
