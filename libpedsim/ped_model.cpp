@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define REGION_HEIGHT 10 //temp width macro
+
 void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
                        std::vector<Twaypoint *> destinationsInScenario,
                        void **positionArrays,
@@ -51,8 +53,14 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
     destinations = std::vector<Ped::Twaypoint *>(destinationsInScenario.begin(),
                                                  destinationsInScenario.end());
     // Regions to manage, each region gets assigned to one thread.
-    regions = std::vector<Ped::Tregion *>();
-    // TODO actually set this, set in parser and input as arg here?
+    int noOfRegions = 120/REGION_HEIGHT; //total height is 120, need total height/height per region regions
+    regions = std::vector<Ped::Tregion *>(noOfRegions);
+
+    for (int i = 0; i < agents.size(); i++)
+    {
+        Tregion *region = calculateRegion(agents[i]->getX(), agents[i]->getY());
+        region->append(agents[i]);
+    }
 
     // Sets the chosen implemenation. Standard in the given code is SEQ
     this->implementation = implementation;
@@ -69,6 +77,15 @@ void Ped::Model::freePosArrs()
     free(destinationY);
     free(desiredX);
     free(desiredY);
+}
+
+
+Ped::Tregion *Ped::Model::calculateRegion(int x, int y)
+{
+    //assuming horizontal stripes
+    int rem = y % REGION_HEIGHT;
+    int index = ((y - rem) / REGION_HEIGHT) - 1;
+    return this->regions[index];
 }
 
 void Ped::Model::sequentialTick()
@@ -97,36 +114,60 @@ void Ped::Model::collisionSequentialTick()
 void Ped::Model::collisionOMPTick()
 {
     // Reset hasMoved that were set on previous tick.
-    for (int i = 0; i < agents.size(); i++) // TODO OMP?
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < agents.size(); i++)
     {
         agents[i]->setHasMoved(false);
     }
 
-    for (Ped::Tregion *region : regions) { // TODO OMP
-        Tagent *agent = region->getNext();
-        while (agent != NULL) {
+    #pragma omp parallel for schedule(dynamic) shared(regions)
+    for (Ped::Tregion *region : regions)
+    {
+
+        for (Tagent *agent = region->getStart(); agent != NULL; agent = region->getNext()) {
             agent->computeNextDesiredPosition();
+            // Compute which region the agent wants to move to (3 times).
+            std::vector<std::pair<int, int>> alternativePositions;
+            std::pair<int, int> pDesired(agent->getDesiredX(), agent->getDesiredY());
+            alternativePositions.push_back(pDesired); //add desired position as an alternative
 
-            std::vector<std::pair<int, int>> prioritizedPositions(3);
-            std::vector<std::pair<int, int>> prioritizedRegions(3);
+            int diffX = pDesired.first - agent->getX();
+            int diffY = pDesired.second - agent->getY();
+            std::pair<int, int> p1, p2;
+            if (diffX == 0 || diffY == 0)
+            {
+                // Agent wants to walk straight to North, South, West or East
+                p1 = std::make_pair(pDesired.first + diffY, pDesired.second + diffX);
+                p2 = std::make_pair(pDesired.first - diffY, pDesired.second - diffX);
+            }
+            else
+            {
+                // Agent wants to walk diagonally
+                p1 = std::make_pair(pDesired.first, agent->getY());
+                p2 = std::make_pair(agent->getX(), pDesired.second);
+            }
+            alternativePositions.push_back(p1);
+            alternativePositions.push_back(p2);
+
+
             bool isSuccessfulMove = false;
+            for (int i = 0; i < alternativePositions.size() && isSuccessfulMove == false; i++)
+            {
+                Tregion *newRegion = calculateRegion(alternativePositions[i].first, alternativePositions[i].second);
+                if (region->getId() == newRegion->getId())
+                {
 
-            // Compute which region the agent wants to move to.
-            // TODO compute 3 different alternatives.
-            Tregion *newRegion = regions[0]; // TODO
-
-            for (int i = 0; i < prioritizedPositions.size() && isSuccessfulMove == false; i++) {
-                if (region->getId() == newRegion->getId()) {
-                    isSuccessfulMove = region->moveAgentInternally();
-                } else {
-                    isSuccessfulMove = region->moveAgentExternally(newRegion);
+                    isSuccessfulMove = region->moveAgentInternally(alternativePositions[i]);
+                }
+                else
+                {
+                    isSuccessfulMove = region->moveAgentExternally(newRegion, alternativePositions[i]);
                 }
             }
 
-            agent = region->getNext();
         }
     }
-    // std::cout << "collisionOMPTick ran once" << std::endl;
+    std::cout << "collisionOMPTick ran once" << std::endl;
 }
 
 void Ped::Model::collisionOMPSIMDTick()

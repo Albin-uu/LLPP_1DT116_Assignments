@@ -58,6 +58,8 @@ namespace Ped
 
         void freePosArrs();
 
+        Ped::Tregion *calculateRegion(int x, int y);
+
         // Cleans up the tree and restructures it. Worth calling every now and then.
         void cleanup();
         ~Model();
