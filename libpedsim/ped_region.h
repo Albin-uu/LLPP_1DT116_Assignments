@@ -11,7 +11,7 @@ namespace Ped
         Tregion(){};
 
         //gets the regions id
-        string getId() {return id;};
+        string getId() {return this->id;};
 
         //moves on to the next agent and gets it
         Ped::Tagent *getNext();

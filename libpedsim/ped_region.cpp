@@ -116,5 +116,6 @@ string Ped::Tregion::get_uuid() {
         res += v[dist(rng)];
         res += v[dist(rng)];
     }
+    res = res + "\0";
     return res;
 }

@@ -8,6 +8,7 @@
 #include "ped_model.h"
 #include "ped_agent.h"
 #include "ped_waypoint.h"
+#include "ped_region.h"
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
@@ -88,7 +89,11 @@ Ped::Tregion *Ped::Model::calculateRegion(int x, int y)
 {
     //assuming horizontal stripes
     int rem = y % REGION_HEIGHT;
+    //printf("%d\n", y);
+    //printf("%d\n", rem);
     int index = ((y - rem) / REGION_HEIGHT) - 1;
+    //printf("%d\n", index);
+    if (index < 0) { index += REGION_HEIGHT; }
     return this->regions[index];
 }
 
@@ -157,10 +162,14 @@ void Ped::Model::collisionOMPTick()
             bool isSuccessfulMove = false;
             for (int i = 0; i < alternativePositions.size() && isSuccessfulMove == false; i++)
             {
+                //printf("%d %d\n", alternativePositions[i].first, alternativePositions[i].second);
+                //printf("%d %d\n", pDesired.first, pDesired.second);
                 Tregion *newRegion = calculateRegion(alternativePositions[i].first, alternativePositions[i].second);
-                if (region->getId() == newRegion->getId())
+                //if (region->getId() == newRegion->getId())
+                std::cout << region->getId() << std::endl;
+                //std::cout << newRegion->getId() << std::endl;
+                if (region->getId().compare(newRegion->getId()) == 0)
                 {
-
                     isSuccessfulMove = region->moveAgentInternally(alternativePositions[i]);
                 }
                 else

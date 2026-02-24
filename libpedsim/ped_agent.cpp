@@ -7,6 +7,7 @@
 //
 #include "ped_agent.h"
 #include "ped_waypoint.h"
+#include <cstdio>
 #include <math.h>
 
 #include <pthread.h>
@@ -46,8 +47,18 @@ void Ped::Tagent::computeNextDesiredPosition()
 	double diffX = *destinationPosX - *x;
 	double diffY = *destinationPosY - *y;
 	double len = sqrt(diffX * diffX + diffY * diffY);
-	*desiredPositionX = (int)round(*x + diffX / len);
+	if (len == 0) // Handle if agent is already at goal, avoid divide by 0.
+	{
+	    *desiredPositionX = *this->x;
+	    *desiredPositionY = *this->y;
+	} else {
+	*desiredPositionX = (int)round((*x + diffX) / len);
 	*desiredPositionY = (int)round(*y + diffY / len);
+	}
+	//printf("x: %d\n", *x);
+	//printf("diff: %f\n", diffX);
+	//printf("len: %f\n", len);
+	//printf("desiredpos: %d\n", *desiredPositionX);
 }
 
 Ped::Tagent *Ped::Tagent::getNextAgent(){
