@@ -2,61 +2,59 @@
 
 #include "ped_agent.h"
 #include <mutex>
+#include <string>
 
-
-#define REGION_HEIGHT 10 //temp width macro
+#define REGION_HEIGHT 10 // temp width macro
 
 namespace Ped
 {
     class Tregion
     {
-        public:
+    public:
+        Tregion(int id) { this->id = id; };
 
-        Tregion(int id){this->id = id;};
+        // gets the regions id
+        // string getId() {return this->id;};
+        int getId()
+        {
+            return this->id;
+        };
 
-        //gets the regions id
-        //string getId() {return this->id;};
-        int getId() {return this->id;};
-
-        //moves on to the next agent and gets it
+        // moves on to the next agent and gets it
         Ped::Tagent *getNext();
 
-        //Initialises the iterator and gets the start
+        // Initialises the iterator and gets the start
         Ped::Tagent *getStart();
 
-        //move current agent to another region
+        // move current agent to another region
         bool moveAgentExternally(Tregion *region, std::pair<int, int> position);
 
         // Move within the same region.
         bool moveAgentInternally(std::pair<int, int> position);
 
-
         bool isAvailable(int x, int y);
 
-        //finds out whether position is in this region
-        //bool isInRegion(int x, int y);
+        // finds out whether position is in this region
+        // bool isInRegion(int x, int y);
 
-        //gets the lock
+        // gets the lock
         void getLock();
 
-        //unlocks the lock
+        // unlocks the lock
         void unlockLock();
 
-        //append
-        void append( Ped::Tagent *agent);
+        // append
+        void append(Ped::Tagent *agent);
 
-
-        private:
-
-        Ped::Tagent * pop();
+    private:
+        Ped::Tagent *pop();
         string get_uuid();
 
-        //int greaterRegion;
-        //int xStart;
-        //int xEnd;
-        //const string id = get_uuid();
+        // int greaterRegion;
+        // int xStart;
+        // int xEnd;
+        // const string id = get_uuid();
         int id;
-
 
         Ped::Tagent *current = NULL;
         Ped::Tagent **previous = NULL;
@@ -64,6 +62,5 @@ namespace Ped
         std::mutex agentsLock;
         Ped::Tagent *startAgent = NULL;
         Ped::Tagent *endAgent = NULL;
-
     };
 }

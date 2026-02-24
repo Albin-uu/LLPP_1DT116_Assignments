@@ -49,31 +49,36 @@ void Ped::Tagent::computeNextDesiredPosition()
 	double len = sqrt(diffX * diffX + diffY * diffY);
 	if (len == 0) // Handle if agent is already at goal, avoid divide by 0.
 	{
-	    *desiredPositionX = *this->x;
-	    *desiredPositionY = *this->y;
-	} else {
-	*desiredPositionX = (int)round((*x + diffX) / len);
-	*desiredPositionY = (int)round(*y + diffY / len);
+		*desiredPositionX = *this->x;
+		*desiredPositionY = *this->y;
 	}
-	//printf("x: %d\n", *x);
-	//printf("diff: %f\n", diffX);
-	//printf("len: %f\n", len);
-	//printf("desiredpos: %d\n", *desiredPositionX);
+	else
+	{
+		*desiredPositionX = (int)round(*x + diffX / len);
+		*desiredPositionY = (int)round(*y + diffY / len);
+	}
+	// printf("x: %d\n", *x);
+	// printf("diff: %f\n", diffX);
+	// printf("len: %f\n", len);
+	// printf("desiredpos: %d\n", *desiredPositionX);
 }
 
-Ped::Tagent *Ped::Tagent::getNextAgent(){
-    return this->next_agent;
+Ped::Tagent *Ped::Tagent::getNextAgent()
+{
+	return this->next_agent;
 }
 
-//gets a pointer to the nextAgent field
-Ped::Tagent **Ped::Tagent::getNextAgentField(){
-    return &this->next_agent;
+// gets a pointer to the nextAgent field
+Ped::Tagent **Ped::Tagent::getNextAgentField()
+{
+	return &this->next_agent;
 }
 
-//sets the next agent to the agent chosen
-Ped::Tagent *Ped::Tagent::setNextAgent(Tagent *next_agent){
-    this->next_agent = next_agent;
-    return next_agent;
+// sets the next agent to the agent chosen
+Ped::Tagent *Ped::Tagent::setNextAgent(Tagent *next_agent)
+{
+	this->next_agent = next_agent;
+	return next_agent;
 }
 
 void Ped::Tagent::addWaypoint(Twaypoint *wp) { waypoints.push_back(wp); }
