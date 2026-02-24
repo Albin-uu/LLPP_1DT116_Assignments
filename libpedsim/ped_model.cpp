@@ -8,7 +8,6 @@
 #include "ped_model.h"
 #include "ped_agent.h"
 #include "ped_waypoint.h"
-#include "ped_region.h"
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
@@ -25,7 +24,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define REGION_HEIGHT 10 //temp width macro
 
 void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
                        std::vector<Twaypoint *> destinationsInScenario,
