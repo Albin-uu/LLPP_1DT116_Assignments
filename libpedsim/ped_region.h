@@ -28,17 +28,11 @@ namespace Ped
         // Initialises the iterator and gets the start
         Ped::Tagent *getStart();
 
-        // move current agent to another region
+        // move ownership of current agent to another region
         void moveCurrentToAnotherRegion(Tregion *region);
 
         // finds out whether position is in this region
         // bool isInRegion(int x, int y);
-
-        // gets the lock
-        void getLock();
-
-        // unlocks the lock
-        void unlockLock();
 
         // append
         void append(Ped::Tagent *agent);
@@ -54,10 +48,10 @@ namespace Ped
         int id;
 
         Ped::Tagent *current = NULL;
-        Ped::Tagent **previous = NULL;
+        std::atomic<Ped::Tagent *> *previous = NULL;
 
         std::mutex agentsLock;
-        Ped::Tagent *startAgent = NULL;
-        std::atomic<Ped::Tagent **> endField{&startAgent};
+        std::atomic<Ped::Tagent *> startAgent = NULL;
+        std::atomic<std::atomic<Ped::Tagent *> *> endField{&startAgent};
     };
 }
