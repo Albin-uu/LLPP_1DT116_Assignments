@@ -18,6 +18,7 @@
 
 #include "ped_agent.h"
 #include "ped_region.h"
+#include "positionTracker.h"
 
 namespace Ped
 {
@@ -82,6 +83,9 @@ namespace Ped
 
         // Regions for collision versions.
         std::vector<Tregion *> regions;
+
+        // Position bitmasks array
+        Ped::Tpositions positionTracker;
 
         int *agentX;
         int *agentY;

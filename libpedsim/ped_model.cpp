@@ -47,6 +47,9 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
     // Set
     agents = std::vector<Ped::Tagent *>(agentsInScenario.begin(),
                                         agentsInScenario.end());
+
+    positionTracker.setup(agents);
+
     // Set up destinations
     destinations = std::vector<Ped::Twaypoint *>(destinationsInScenario.begin(),
                                                  destinationsInScenario.end());
@@ -157,19 +160,25 @@ void Ped::Model::collisionOMPTick()
             alternativePositions.push_back(p1);
             alternativePositions.push_back(p2);
 
-            bool isSuccessfulMove = false;
-            for (int i = 0; i < alternativePositions.size() && isSuccessfulMove == false; i++)
+            std::pair<int, int> currentPos(agent->getX(), agent->getY());
+            for (int i = 0; i < alternativePositions.size(); i++)
             {
+                if (!positionTracker.moveAgent(currentPos, alternativePositions[i]))
+                {
+                    continue; // desired position is taken, try next alternative position
+                }
+
+                agent->setX(alternativePositions[i].first);
+                agent->setY(alternativePositions[i].second);
+                agent->setHasMoved(true);
+
                 Tregion *newRegion = calculateRegion(alternativePositions[i].first, alternativePositions[i].second);
 
-                if (region->getId() == newRegion->getId())
+                if (region->getId() != newRegion->getId())
                 {
-                    isSuccessfulMove = region->moveAgentInternally(alternativePositions[i]);
+                    region->moveCurrentToAnotherRegion(newRegion);
                 }
-                else
-                {
-                    isSuccessfulMove = region->moveAgentExternally(newRegion, alternativePositions[i]);
-                }
+                break;
             }
         }
     }
