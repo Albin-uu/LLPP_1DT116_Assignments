@@ -3,16 +3,6 @@
 #include <random>
 #include <cstddef>
 
-void Ped::Tregion::getLock()
-{
-    agentsLock.lock();
-}
-
-void Ped::Tregion::unlockLock()
-{
-    agentsLock.unlock();
-}
-
 Ped::Tagent *Ped::Tregion::getStart()
 {
     previous = &startAgent;
@@ -43,30 +33,36 @@ Ped::Tagent *Ped::Tregion::getNext()
 void Ped::Tregion::append(Ped::Tagent *agent)
 {
     agent->setNextAgent(NULL);
-    Ped::Tagent **prevEnd = std::atomic_exchange(&this->endField, agent->getNextAgentField());
-    *prevEnd = agent;
+    std::atomic<Ped::Tagent *> *prevEnd = std::atomic_exchange(&this->endField, agent->getNextAgentField());
+    prevEnd->store(agent);
 }
 
 Ped::Tagent *Ped::Tregion::pop()
 {
     Ped::Tagent *popped = current;
-    Ped::Tagent **nextField = popped->getNextAgentField();
+    std::atomic<Ped::Tagent *> *nextField = popped->getNextAgentField();
+
+    if (!std::atomic_compare_exchange_strong(&this->endField, &nextField, previous))
+    {
+        // another thread has appended to the end of the list, so we have to wait until the next field is updated
+        nextField = popped->getNextAgentField();
+        // busy wait until the next field is updated by the appending thread
+        // want to remove this shit so bad  ;-;
+        while (nextField->load() == NULL)
+            ;
+    }
+
     Ped::Tagent *next = popped->getNextAgent();
-    *previous = next;
+    std::atomic_compare_exchange_weak(previous, &current, next);
     current = next;
-    std::atomic_compare_exchange_weak(&this->endField, &nextField, previous);
 
     return popped;
 }
 
 void Ped::Tregion::moveCurrentToAnotherRegion(Tregion *region)
 {
-    this->getLock();
     Ped::Tagent *popped = this->pop();
-    this->unlockLock();
-    region->getLock();
     region->append(popped);
-    region->unlockLock();
 }
 
 string Ped::Tregion::get_uuid()

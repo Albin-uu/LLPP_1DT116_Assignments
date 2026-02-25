@@ -18,6 +18,7 @@
 
 #include <deque>
 #include <vector>
+#include <atomic>
 
 using namespace std;
 
@@ -52,14 +53,14 @@ namespace Ped
         // Adds a new waypoint to reach for this agent
         void addWaypoint(Twaypoint *wp);
 
-        //gets the next agent
+        // gets the next agent
         Tagent *getNextAgent();
 
-        //gets a pointer to the nextAgent field
-        Tagent **getNextAgentField();
+        // gets a pointer to the nextAgent field
+        std::atomic<Ped::Tagent *> *getNextAgentField();
 
-        //sets the next agent to the agent chosen
-        Tagent *setNextAgent(Tagent *next_agent);
+        // sets the next agent to the agent chosen
+        Tagent *setNextAgent(Tagent *new_agent);
 
         bool getHasMoved() { return hasMoved; }
         void setHasMoved(bool hasMoved) { hasMoved = hasMoved; }
@@ -90,11 +91,10 @@ namespace Ped
         // Internal init function
         void init(void **positionArrays, int agentIdex);
 
-        //next agent in list
-        Tagent *next_agent;
+        // next agent in list
+        std::atomic<Ped::Tagent *> next_agent;
 
         bool hasMoved = false;
-
     };
 } // namespace Ped
 
