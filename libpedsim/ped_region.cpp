@@ -44,10 +44,11 @@ Ped::Tagent *Ped::Tregion::pop()
 
     if (!std::atomic_compare_exchange_strong(&this->endField, &nextField, previous))
     {
-        // another thread has appended to the end of the list, so we have to wait until the next field is updated
+        // branches if current is not the end of the list
         nextField = popped->getNextAgentField();
-        // busy wait until the next field is updated by the appending thread
-        // want to remove this shit so bad  ;-;
+
+        // if the next field is null, the list just got appended to,
+        // so we wait until the append has fully updated the link
         while (nextField->load() == NULL)
             ;
     }
