@@ -3,6 +3,8 @@
 #include "ped_agent.h"
 #include <mutex>
 #include <string>
+#include <atomic>
+#include <cstdint>
 
 #define REGION_HEIGHT 10 // temp width macro
 
@@ -27,12 +29,7 @@ namespace Ped
         Ped::Tagent *getStart();
 
         // move current agent to another region
-        bool moveAgentExternally(Tregion *region, std::pair<int, int> position);
-
-        // Move within the same region.
-        bool moveAgentInternally(std::pair<int, int> position);
-
-        bool isAvailable(int x, int y);
+        void moveCurrentToAnotherRegion(Tregion *region);
 
         // finds out whether position is in this region
         // bool isInRegion(int x, int y);
@@ -61,6 +58,6 @@ namespace Ped
 
         std::mutex agentsLock;
         Ped::Tagent *startAgent = NULL;
-        Ped::Tagent *endAgent = NULL;
+        std::atomic<Ped::Tagent **> endField{&startAgent};
     };
 }
