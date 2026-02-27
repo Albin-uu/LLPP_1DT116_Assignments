@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
     std::string scenefile = std::string("scenario.xml");
     int max_steps = 1000;
     Ped::IMPLEMENTATION implementation_to_test = Ped::SEQ;
+    Ped::IMPLEMENTATION implementation_to_test_against = Ped::SEQ;
     std::string export_trace_file = "";
 
     // Parsing the command line arguments. Feel free to add your own
@@ -150,11 +151,14 @@ int main(int argc, char *argv[])
             // Handle --comp
             std::cout << "Option --comp activated\n";
             implementation_to_test = Ped::COLLISION_OMP;
+            implementation_to_test_against = Ped::COLLISION_SEQ;
             break;
         case 'z':
             // Handle --compsimd
             std::cout << "Option --compsimd activated\n";
             implementation_to_test = Ped::COLLISION_OMP_SIMD;
+            implementation_to_test_against = Ped::COLLISION_SEQ;
+            break;
         case 'm':
             // Handle --max-steps with a numerical argument
             max_steps = std::stoi(optarg); // Convert the argument to an integer
@@ -194,7 +198,7 @@ int main(int argc, char *argv[])
 
                 Ped::Model model;
                 ParseScenario parser(scenefile);
-                model.setup(parser.getAgents(), parser.getWaypoints(), parser.getPositionArrays(), Ped::SEQ);
+                model.setup(parser.getAgents(), parser.getWaypoints(), parser.getPositionArrays(), implementation_to_test_against);
 
                 Simulation *simulation = new TimingSimulation(model, max_steps);
 
@@ -235,8 +239,6 @@ int main(int argc, char *argv[])
             Ped::Model model;
             ParseScenario parser(scenefile);
             model.setup(parser.getAgents(), parser.getWaypoints(), parser.getPositionArrays(), implementation_to_test);
-
-
             Simulation *simulation = new ExportSimulation(model, max_steps, export_trace_file);
 
             std::cout << "Running Export Tracer...\n";
