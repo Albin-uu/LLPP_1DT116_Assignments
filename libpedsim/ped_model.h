@@ -70,6 +70,8 @@ namespace Ped
         int getHeatmapSize() const;
 
     private:
+        std::vector<Ped::Tregion *> collectRegions();
+
         // Denotes which implementation (sequential, parallel implementations..)
         // should be used for calculating the desired positions of
         // agents (Assignment 1)
@@ -82,7 +84,9 @@ namespace Ped
         std::vector<Twaypoint *> destinations;
 
         // Regions for collision versions.
-        std::vector<Tregion *> regions;
+        std::vector<
+            std::map<int, std::pair<Ped::Tregion *, bool>>>
+            regions;
 
         // Position bitmasks array
         Ped::Tpositions positionTracker;
@@ -94,17 +98,22 @@ namespace Ped
         int *desiredX;
         int *desiredY;
 
+        int ticks = 0;
+
         // Moves an agent towards its next position
         void move(Ped::Tagent *agent);
 
         void sequentialTick();
         void simdTick();
+        void simdCompNextDesiredPos();
         void ompTick();
         void cppTick();
         void collisionSequentialTick();
         void collisionOMPTick();
         void collisionOMPSIMDTick();
 
+        void dynamicResizeRegions();
+        void parrallelCMove();
         ////////////
         /// Everything below here won't be relevant until Assignment 3
         ///////////////////////////////////////////////

@@ -5,9 +5,13 @@
 // bits in a bitmask
 #define BIMASK_SIZE sizeof(unsigned long) * 8
 
+#define MAX_X 160
+#define MAX_Y 120
+#define MAP_SIZE (MAX_X * MAX_Y)
+
 std::pair<int, int> Ped::Tpositions::posToIndex(std::pair<int, int> pos)
 {
-    int raw = (pos.first + pos.second * 160);
+    int raw = (pos.first + pos.second * MAX_X);
     // out.fisrt: index of bitmask in array
     // out.second: index of bit in bitmask
     return std::make_pair(raw / BIMASK_SIZE, raw % BIMASK_SIZE);
@@ -20,7 +24,7 @@ bool Ped::Tpositions::placeAgent(std::pair<int, int> pos)
     return (std::atomic_fetch_or(bitmasks + index.first, mask) & mask) == 0;
 }
 
-bool Ped::Tpositions::moveAgent(std::pair<int, int> currentPos, std::pair<int, int> desiredPos)
+bool Ped::Tpositions::tryMoveAgent(std::pair<int, int> currentPos, std::pair<int, int> desiredPos)
 {
     std::pair<int, int> currentIndex = posToIndex(currentPos);
 
@@ -40,7 +44,7 @@ bool Ped::Tpositions::moveAgent(std::pair<int, int> currentPos, std::pair<int, i
 
 void Ped::Tpositions::setup(std::vector<Ped::Tagent *> agents)
 {
-    int size = (160 * 120) / BIMASK_SIZE;
+    int size = MAP_SIZE / BIMASK_SIZE;
     bitmasks = (std::atomic_ulong *)malloc(size * sizeof(std::atomic_ulong));
     for (int i = 0; i < size; i++)
     {

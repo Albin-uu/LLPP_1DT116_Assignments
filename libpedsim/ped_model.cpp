@@ -55,12 +55,16 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
                                                  destinationsInScenario.end());
     // Regions to manage, each region gets assigned to one thread.
     int noOfRegions = 120 / REGION_HEIGHT; // total height is 120, need total height/height per region regions
-    regions = std::vector<Ped::Tregion *>(noOfRegions);
+    regions = std::vector<
+        std::map<int, std::pair<Ped::Tregion *, bool>>>(noOfRegions);
     for (int i = 0; i < regions.size(); i++)
     {
-        regions[i] = new Tregion(i);
+        Ped::Tregion *region = new Tregion(i << 8, 0, 159);
+        std::map<int, std::pair<Ped::Tregion *, bool>> regionMap;
+        regionMap[0] = std::make_pair(region, false);
+        regionMap[159] = std::make_pair(region, true);
+        regions[i] = regionMap;
     }
-
     for (int i = 0; i < agents.size(); i++)
     {
         Tregion *region = calculateRegion(agents[i]->getX(), agents[i]->getY());
@@ -96,7 +100,25 @@ Ped::Tregion *Ped::Model::calculateRegion(int x, int y)
     // printf("%d\n", rem);
     int index = ((y - rem) / REGION_HEIGHT); // Tog bort -1, tror att det ska vara så här
     // printf("%d\n", index);
-    return this->regions[index];
+    auto regionMap = regions[index];
+    Ped::Tregion *region;
+    while (true)
+    {
+        auto it = regionMap.find(x);
+        if (it != regionMap.end())
+        {
+            return it->second.first;
+        }
+        x++;
+        if (x >= 160)
+        {
+            throw std::runtime_error(
+                "calculateRegion: No region found for position(" //
+                + std::to_string(x)                              //
+                + ", " + std::to_string(y)                       //
+                + ")");                                          //
+        }
+    }
 }
 
 void Ped::Model::sequentialTick()
@@ -122,117 +144,199 @@ void Ped::Model::collisionSequentialTick()
     }
 }
 
-void Ped::Model::collisionOMPTick()
+std::vector<Ped::Tregion *> Ped::Model::collectRegions()
 {
-// Reset hasMoved that were set on previous tick.
-#pragma omp parallel for schedule(static)
-    for (int i = 0; i < agents.size(); i++)
+    std::vector<Ped::Tregion *> allRegions;
+    for (auto &regionMap : regions)
     {
-        agents[i]->setHasMoved(false);
+        for (auto &regionPair : regionMap)
+        {
+            auto payload = regionPair.second;
+            if (!payload.second)
+            {
+                continue; // skip duplicate pointer to the same region
+            }
+            allRegions.push_back(payload.first);
+        }
+    }
+    return allRegions;
+}
+
+std::vector<std::pair<int, int>> calcAlternativePositions(Ped::Tagent *agent)
+{
+
+    // Compute where the agent wants to go
+    // and the alternative positions to try if the desired position is taken
+    // where one of the alternative positions is a tangential step
+    // this is to prevent deadlocks where agents are blocking each other
+    std::vector<std::pair<int, int>> alternativePositions;
+    std::pair<int, int> pDesired(agent->getDesiredX(), agent->getDesiredY());
+    alternativePositions.push_back(pDesired); // add desired position as an alternative
+
+    int diffX = pDesired.first - agent->getX();
+    int diffY = pDesired.second - agent->getY();
+    std::pair<int, int> p1, p2, p3;
+    if (diffX == 0 || diffY == 0)
+    {
+        // Agent wants to walk straight to North, South, West or East
+        p1 = std::make_pair(pDesired.first + diffY, pDesired.second + diffX);
+        p2 = std::make_pair(pDesired.first - diffY, pDesired.second - diffX);
+        p3 = std::make_pair(agent->getX() + diffY, agent->getY() + diffX);
+    }
+    else
+    {
+        // Agent wants to walk diagonally
+        p1 = std::make_pair(pDesired.first, agent->getY());
+        p2 = std::make_pair(agent->getX(), pDesired.second);
+        p3 = std::make_pair(pDesired.first, agent->getY() - diffY);
     }
 
-#pragma omp parallel for schedule(dynamic) shared(regions)
-    for (Ped::Tregion *region : regions)
-    {
-        for (Tagent *agent = region->getStart(); agent != NULL; agent = region->getNext())
-        {
-            agent->computeNextDesiredPosition();
-            // Compute which region the agent wants to move to (3 times).
-            std::vector<std::pair<int, int>> alternativePositions;
-            std::pair<int, int> pDesired(agent->getDesiredX(), agent->getDesiredY());
-            alternativePositions.push_back(pDesired); // add desired position as an alternative
+    alternativePositions.push_back(p1);
+    alternativePositions.push_back(p2);
+    alternativePositions.push_back(p3);
 
-            int diffX = pDesired.first - agent->getX();
-            int diffY = pDesired.second - agent->getY();
-            std::pair<int, int> p1, p2;
-            if (diffX == 0 || diffY == 0)
+    return alternativePositions;
+}
+
+void Ped::Model::dynamicResizeRegions()
+{
+#pragma omp parallel for schedule(dynamic) shared(regions)
+    for (int i = 0; i < regions.size(); i++)
+    {
+        auto currentMap = &regions[i];
+        auto itr = currentMap->begin();
+        while (itr != currentMap->end())
+        {
+            if (!itr->second.second)
             {
-                // Agent wants to walk straight to North, South, West or East
-                p1 = std::make_pair(pDesired.first + diffY, pDesired.second + diffX);
-                p2 = std::make_pair(pDesired.first - diffY, pDesired.second - diffX);
+                itr++;
             }
-            else
+            Ped::Tregion *region = itr->second.first;
+
+            if (region->getAmountOfAgents() > REGION_HEIGHT * 6)
             {
-                // Agent wants to walk diagonally
-                p1 = std::make_pair(pDesired.first, agent->getY());
-                p2 = std::make_pair(agent->getX(), pDesired.second);
+                Ped::Tregion *newRegion = region->splitRegion();
+                int border = newRegion->getXStart();
+                currentMap->insert(std::make_pair(border, std::make_pair(newRegion, false)));
+                currentMap->insert(std::make_pair(border - 1, std::make_pair(region, true)));
+                itr->second = make_pair(newRegion, true);
+                itr++;
+                itr++;
             }
-            alternativePositions.push_back(p1);
-            alternativePositions.push_back(p2);
+            else if (region->getAmountOfAgents() < REGION_HEIGHT)
+            {
+                auto nextItr = std::next(itr);
+                if (nextItr == currentMap->end())
+                {
+                    break;
+                }
+                Ped::Tregion *nextRegion = nextItr->second.first;
+                if (nextRegion->getAmountOfAgents() < REGION_HEIGHT)
+                {
+
+                    region->mergeRegion(nextRegion);
+
+                    currentMap->erase(nextItr);
+                    itr = currentMap->erase(itr);
+                    itr->second = make_pair(region, true);
+                    itr++;
+                }
+            }
+
+            itr++;
+        }
+    }
+}
+
+void Ped::Model::parrallelCMove()
+{
+    std::vector<Ped::Tregion *> allRegions = this->collectRegions();
+#pragma omp parallel for schedule(dynamic) shared(regions)
+    for (int i = 0; i < allRegions.size(); i++)
+    {
+
+        Ped::Tregion *region = allRegions[i];
+        Ped::Tagent *agent = region->getStart();
+        while (agent != NULL)
+        {
+
+            auto altPos = calcAlternativePositions(agent);
 
             std::pair<int, int> currentPos(agent->getX(), agent->getY());
-            for (int i = 0; i < alternativePositions.size(); i++)
+            bool hasPopped = false;
+            for (int i = 0; i < altPos.size(); i++)
             {
-                if (!positionTracker.moveAgent(currentPos, alternativePositions[i]))
+                std::pair<int, int> choosenPos = altPos[i];
+
+                if (!positionTracker.tryMoveAgent(currentPos, choosenPos))
                 {
                     continue; // desired position is taken, try next alternative position
                 }
 
-                agent->setX(alternativePositions[i].first);
-                agent->setY(alternativePositions[i].second);
+                agent->setX(choosenPos.first);
+                agent->setY(choosenPos.second);
                 agent->setHasMoved(true);
 
-                Tregion *newRegion = calculateRegion(alternativePositions[i].first, alternativePositions[i].second);
+                Tregion *newRegion = calculateRegion(choosenPos.first, choosenPos.second);
 
                 if (region->getId() != newRegion->getId())
                 {
-                    region->moveCurrentToAnotherRegion(newRegion);
+                    hasPopped = true;
+                    agent = region->moveCurrentToAnotherRegion(newRegion);
                 }
                 break;
             }
-        }
+            if (!hasPopped)
+            {
+                agent = region->getNext();
+            }
+        };
     }
-    // std::cout << "collisionOMPTick ran once" << std::endl;
+}
+
+void Ped::Model::collisionOMPTick()
+{
+    this->ticks++;
+
+    // Reset hasMoved and computes the desired position for all agents in parallel
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < agents.size(); i++)
+    {
+        Ped::Tagent *agent = agents[i];
+        agent->setHasMoved(false);
+        agent->computeNextDesiredPosition();
+    }
+
+    if (this->ticks % 400 == 40)
+    {
+        dynamicResizeRegions();
+    }
+
+    this->parrallelCMove();
 }
 
 void Ped::Model::collisionOMPSIMDTick()
 {
+    this->ticks++;
+
+    // Reset hasMoved and computes the desired position for all agents in parallel
+#pragma omp parallel for schedule(static)
     for (int i = 0; i < agents.size(); i++)
     {
         Ped::Tagent *agent = agents[i];
-        agent->setNextDestination();
+        agent->setHasMoved(false);
     }
-    for (int i = 0; i < agents.size(); i += 4)
+    this->simdCompNextDesiredPos();
+
+    if (this->ticks % 400 == 40)
     {
-
-        __m256d destX = _mm256_load_pd(&destinationX[i]);
-        __m256d destY = _mm256_load_pd(&destinationY[i]);
-        __m128i posX = _mm_loadu_si128((__m128i *)&agentX[i]);
-        __m128i posY = _mm_loadu_si128((__m128i *)&agentY[i]);
-
-        __m256d posXD = _mm256_cvtepi32_pd(posX);
-        __m256d posYD = _mm256_cvtepi32_pd(posY);
-
-        __m256d diffX = _mm256_sub_pd(destX, posXD);
-        __m256d diffY = _mm256_sub_pd(destY, posYD);
-
-        __m256d squaredDiffX = _mm256_mul_pd(diffX, diffX);
-        __m256d squaredSum = _mm256_fmadd_pd(diffY, diffY, squaredDiffX);
-        __m256d length = _mm256_sqrt_pd(squaredSum);
-
-        __m256d normDiffX = _mm256_div_pd(diffX, length);
-        __m256d normDiffY = _mm256_div_pd(diffY, length);
-
-        __m256d desiredXD = _mm256_add_pd(posXD, normDiffX);
-        __m256d desiredYD = _mm256_add_pd(posYD, normDiffY);
-
-        __m256d roundedX = _mm256_round_pd(desiredXD, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-        __m256d roundedY = _mm256_round_pd(desiredYD, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-
-        __m128i desireX = _mm256_cvtpd_epi32(roundedX);
-        __m128i desireY = _mm256_cvtpd_epi32(roundedY);
-
-        // Unlike simdTick() don't set x and y here.
+        dynamicResizeRegions();
     }
-    // TODO
-    for (int i = 0; i < agents.size(); i++)
-    {
-        move(agents[i]);
-    }
-    std::cout << "collisionOMPSIMDTick ran once" << std::endl;
+
+    this->parrallelCMove();
 }
 
-void Ped::Model::simdTick()
+void Ped::Model::simdCompNextDesiredPos()
 {
 
     for (int i = 0; i < agents.size(); i++)
@@ -258,12 +362,18 @@ void Ped::Model::simdTick()
         __m256d squaredSum = _mm256_fmadd_pd(diffY, diffY, squaredDiffX);
         __m256d length = _mm256_sqrt_pd(squaredSum);
 
+        __m256d zero = _mm256_set1_pd(0.0);
+
+        __m256d zeroLenMask = _mm256_cmp_pd(length, zero, _CMP_NEQ_OQ);
+
         __m256d normDiffX = _mm256_div_pd(diffX, length);
         __m256d normDiffY = _mm256_div_pd(diffY, length);
 
-        __m256d desiredXD = _mm256_add_pd(posXD, normDiffX);
-        __m256d desiredYD = _mm256_add_pd(posYD, normDiffY);
+        __m256d normDiffXMasked = _mm256_and_pd(normDiffX, zeroLenMask);
+        __m256d normDiffYMasked = _mm256_and_pd(normDiffY, zeroLenMask);
 
+        __m256d desiredXD = _mm256_add_pd(posXD, normDiffXMasked);
+        __m256d desiredYD = _mm256_add_pd(posYD, normDiffYMasked);
         __m256d roundedX = _mm256_round_pd(desiredXD, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
         __m256d roundedY = _mm256_round_pd(desiredYD, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 
@@ -272,6 +382,18 @@ void Ped::Model::simdTick()
 
         _mm_storeu_si128((__m128i *)&desiredX[i], desireX);
         _mm_storeu_si128((__m128i *)&desiredY[i], desireY);
+    }
+}
+
+void Ped::Model::simdTick()
+{
+
+    this->simdCompNextDesiredPos();
+
+    for (int i = 0; i < agents.size(); i += 4)
+    {
+        __m128i desireX = _mm_loadu_si128((__m128i *)&desiredX[i]);
+        __m128i desireY = _mm_loadu_si128((__m128i *)&desiredY[i]);
         _mm_storeu_si128((__m128i *)&agentX[i], desireX);
         _mm_storeu_si128((__m128i *)&agentY[i], desireY);
     }

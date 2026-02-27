@@ -2,6 +2,8 @@
 #include "ped_agent.h"
 #include <random>
 #include <cstddef>
+#include <queue>
+#include <iostream>
 
 Ped::Tagent *Ped::Tregion::getStart()
 {
@@ -12,26 +14,18 @@ Ped::Tagent *Ped::Tregion::getStart()
 
 Ped::Tagent *Ped::Tregion::getNext()
 {
-    if (this->current == NULL)
-    {
-        return NULL;
-    }
     do
     {
-        Tagent *oldCurrent = this->current;
+        this->previous = this->current->getNextAgentField();
         this->current = this->current->getNextAgent();
-        this->previous = oldCurrent->getNextAgentField();
-        if (this->current == NULL)
-        {
-            return NULL;
-        }
-    } while (this->current->getHasMoved());
+    } while (this->current != NULL && this->current->getHasMoved());
 
     return this->current;
 }
 
 void Ped::Tregion::append(Ped::Tagent *agent)
 {
+    this->amountOfAgents++;
     agent->setNextAgent(NULL);
     std::atomic<Ped::Tagent *> *prevEnd = std::atomic_exchange(&this->endField, agent->getNextAgentField());
     prevEnd->store(agent);
@@ -39,6 +33,8 @@ void Ped::Tregion::append(Ped::Tagent *agent)
 
 Ped::Tagent *Ped::Tregion::pop()
 {
+    this->amountOfAgents--;
+
     Ped::Tagent *popped = current;
     std::atomic<Ped::Tagent *> *nextField = popped->getNextAgentField();
 
@@ -60,10 +56,71 @@ Ped::Tagent *Ped::Tregion::pop()
     return popped;
 }
 
-void Ped::Tregion::moveCurrentToAnotherRegion(Tregion *region)
+int Ped::Tregion::findMedianX()
+{
+    priority_queue<int> small, large;
+    Tagent *agent = this->getStart();
+    while (agent != NULL)
+    {
+        small.push(agent->getX());
+        large.push(-small.top());
+        small.pop();
+        if (small.size() < large.size())
+        {
+            small.push(-large.top());
+            large.pop();
+        }
+        agent = agent->getNextAgent();
+    }
+
+    return small.top();
+}
+
+Ped::Tregion *Ped::Tregion::splitRegion()
+{
+
+    int median = this->findMedianX();
+
+    Tregion *newRegion = new Tregion((this->id & REGION_ID_Y) | median, median, this->xEnd);
+    Tagent *agent = this->getStart();
+    while (agent != NULL)
+    {
+
+        if (agent->getX() >= median)
+        {
+            agent = this->moveCurrentToAnotherRegion(newRegion);
+        }
+        else
+        {
+            agent = this->getNext();
+        }
+    }
+
+    this->xEnd = median - 1;
+
+    return newRegion;
+}
+
+void Ped::Tregion::mergeRegion(Ped::Tregion *otherRegion)
+{
+    Tagent *agent = otherRegion->getStart();
+    while (agent != NULL)
+    {
+        agent = otherRegion->moveCurrentToAnotherRegion(this);
+    }
+    this->xEnd = otherRegion->xEnd;
+    delete otherRegion;
+}
+
+Ped::Tagent *Ped::Tregion::moveCurrentToAnotherRegion(Tregion *otherRegion)
 {
     Ped::Tagent *popped = this->pop();
-    region->append(popped);
+    otherRegion->append(popped);
+    if (current != NULL && current->getHasMoved())
+    {
+        return this->getNext();
+    }
+    return current;
 }
 
 string Ped::Tregion::get_uuid()

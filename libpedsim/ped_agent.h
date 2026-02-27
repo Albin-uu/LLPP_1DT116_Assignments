@@ -92,7 +92,7 @@ namespace Ped
         void init(void **positionArrays, int agentIdex);
 
         // next agent in list
-        std::atomic<Ped::Tagent *> next_agent;
+        std::atomic<Ped::Tagent *> next_agent{NULL};
 
         bool hasMoved = false;
     };
