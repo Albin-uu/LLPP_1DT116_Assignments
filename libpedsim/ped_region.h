@@ -8,12 +8,20 @@
 
 #define REGION_HEIGHT 10 // temp width macro
 
+#define REGION_ID_Y (255 << 8)
+#define REGION_ID_X (255)
+
 namespace Ped
 {
     class Tregion
     {
     public:
-        Tregion(int id) { this->id = id; };
+        Tregion(int id, int xStart, int xEnd)
+        {
+            this->id = id;
+            this->xStart = xStart;
+            this->xEnd = xEnd;
+        };
 
         // gets the regions id
         // string getId() {return this->id;};
@@ -28,8 +36,8 @@ namespace Ped
         // Initialises the iterator and gets the start
         Ped::Tagent *getStart();
 
-        // move ownership of current agent to another region
-        void moveCurrentToAnotherRegion(Tregion *region);
+        // move ownership of current agent to another region and return the new agent at the current position
+        Ped::Tagent *moveCurrentToAnotherRegion(Tregion *region);
 
         // finds out whether position is in this region
         // bool isInRegion(int x, int y);
@@ -37,21 +45,35 @@ namespace Ped
         // append
         void append(Ped::Tagent *agent);
 
+        int getAmountOfAgents() { return amountOfAgents; }
+
+        // splits the region in two and moves half of the agents to the new region
+        // returns the x value of the split line
+        Ped::Tregion *splitRegion();
+
+        void mergeRegion(Ped::Tregion *otherRegion);
+
+        int getXStart() { return xStart; }
+        int getXEnd() { return xEnd; }
+
     private:
+        int findMedianX();
+
         Ped::Tagent *pop();
         string get_uuid();
 
+        atomic_int amountOfAgents{0};
+
         // int greaterRegion;
-        // int xStart;
-        // int xEnd;
+        int xStart;
+        int xEnd;
         // const string id = get_uuid();
         int id;
 
         Ped::Tagent *current = NULL;
         std::atomic<Ped::Tagent *> *previous = NULL;
 
-        std::mutex agentsLock;
-        std::atomic<Ped::Tagent *> startAgent = NULL;
+        std::atomic<Ped::Tagent *> startAgent{NULL};
         std::atomic<std::atomic<Ped::Tagent *> *> endField{&startAgent};
     };
 }
