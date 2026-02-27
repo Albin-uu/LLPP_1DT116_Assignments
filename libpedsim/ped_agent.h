@@ -13,6 +13,7 @@
 // is handled in ped_model.cpp.
 //
 
+#include <cstddef>
 #ifndef _ped_agent_h_
 #define _ped_agent_h_ 1
 
