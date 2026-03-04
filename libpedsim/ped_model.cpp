@@ -71,11 +71,17 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
         region->append(agents[i]);
     }
 
+    // Used for cuda.
+    agentsDesiredX = (int *)malloc(agents.size()*sizeof(int));
+    agentsDesiredY = (int *)malloc(agents.size()*sizeof(int));
+
     // Sets the chosen implemenation. Standard in the given code is SEQ
     this->implementation = implementation;
 
     // Set up heatmap (relevant for Assignment 4)
-    setupHeatmapSeq();
+    // Uncomment and comment the other to switch between seq and cuda versions.
+    // setupHeatmapSeq();
+    setupHeatmapCuda();
 }
 
 void Ped::Model::freePosArrs()
@@ -306,6 +312,32 @@ void Ped::Model::collisionOMPTick()
         agent->setHasMoved(false);
         agent->computeNextDesiredPosition();
     }
+    updateHeatmapSeq();
+
+    if (this->ticks % 400 == 40)
+    {
+        dynamicResizeRegions();
+    }
+
+    this->parrallelCMove();
+}
+
+void Ped::Model::collisionOMPHMTick()
+{
+    this->ticks++;
+
+    // Reset hasMoved and computes the desired position for all agents in parallel
+#pragma omp parallel for schedule(static)
+    for (int i = 0; i < agents.size(); i++)
+    {
+        Ped::Tagent *agent = agents[i];
+        agent->setHasMoved(false);
+        agent->computeNextDesiredPosition();
+        agentsDesiredX[i] = agent->getDesiredX();
+        agentsDesiredY[i] = agent->getDesiredY();
+    }
+
+    updateHeatmapCuda(agentsDesiredX, agentsDesiredY, agents.size());
 
     if (this->ticks % 400 == 40)
     {
@@ -473,7 +505,8 @@ void Ped::Model::tick()
     }
     else if (this->implementation == COLLISION_OMP)
     {
-        collisionOMPTick();
+        //collisionOMPTick();
+        collisionOMPHMTick(); // Temp for cuda, assignement 4
     }
     else if (this->implementation == COLLISION_OMP_SIMD)
     {

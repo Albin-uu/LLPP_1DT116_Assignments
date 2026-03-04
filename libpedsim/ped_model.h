@@ -91,6 +91,10 @@ namespace Ped
         // Position bitmasks array
         Ped::Tpositions positionTracker;
 
+        // Used for cuda.
+        int *agentsDesiredY;
+        int *agentsDesiredX;
+
         int *agentX;
         int *agentY;
         double *destinationX;
@@ -111,6 +115,7 @@ namespace Ped
         void collisionSequentialTick();
         void collisionOMPTick();
         void collisionOMPSIMDTick();
+        void collisionOMPHMTick();
 
         void dynamicResizeRegions();
         void parrallelCMove();
@@ -139,7 +144,9 @@ namespace Ped
         int **blurred_heatmap;
 
         void setupHeatmapSeq();
+        void setupHeatmapCuda();
         void updateHeatmapSeq();
+        void updateHeatmapCuda(int *agentsDesiredX, int *agentsDesiredY, int agentCount);
     };
 } // namespace Ped
 #endif
