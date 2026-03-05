@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
             {"cseq", no_argument, NULL, 'x'},
             {"comp", no_argument, NULL, 'y'},
             {"compsimd", no_argument, NULL, 'z'},
+            {"comphm", no_argument, NULL, 'g'},
             {0, 0, 0, 0} // End of options
         };
 
@@ -163,6 +164,10 @@ int main(int argc, char *argv[])
             // Handle --max-steps with a numerical argument
             max_steps = std::stoi(optarg); // Convert the argument to an integer
             std::cout << "Option --max-steps set to: " << max_steps << std::endl;
+            break;
+        case 'g':
+            std::cout << "Option --compheatmap activated\n";
+            implementation_to_test = Ped::COLLISION_OMP_HEATMAP;
             break;
         default:
             // Handle unknown long options
