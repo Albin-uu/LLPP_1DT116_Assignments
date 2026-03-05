@@ -81,7 +81,7 @@ Ped::Tregion *Ped::Tregion::splitRegion()
 
     int median = this->findMedianX();
 
-    Tregion *newRegion = new Tregion((this->id & REGION_ID_Y) | median, median, this->xEnd);
+    Tregion *newRegion = new Tregion((this->id & REGION_ID_Y) | median, this->xEnd);
     Tagent *agent = this->getStart();
     while (agent != NULL)
     {

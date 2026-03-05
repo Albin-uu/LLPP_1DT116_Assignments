@@ -70,8 +70,6 @@ namespace Ped
         int getHeatmapSize() const;
 
     private:
-        std::vector<Ped::Tregion *> collectRegions();
-
         // Denotes which implementation (sequential, parallel implementations..)
         // should be used for calculating the desired positions of
         // agents (Assignment 1)
@@ -83,10 +81,12 @@ namespace Ped
         // The waypoints in this scenario
         std::vector<Twaypoint *> destinations;
 
-        // Regions for collision versions.
-        std::vector<
-            std::map<int, std::pair<Ped::Tregion *, bool>>>
-            regions;
+        std::map<int, Ped::Tregion *> regionsMap;
+        Ped::Tregion **regionsIndex;
+        std::map<int, Ped::Tregion *>::iterator *SliceIterators;
+
+        void splitRegionIndex(Ped::Tregion *region);
+        void mergeRegionIndex(Ped::Tregion *region, Ped::Tregion *nextRegion);
 
         // Position bitmasks array
         Ped::Tpositions positionTracker;

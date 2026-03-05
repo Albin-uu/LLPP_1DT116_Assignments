@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#define NUM_SLICES 120 / REGION_HEIGHT
+
 void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
                        std::vector<Twaypoint *> destinationsInScenario,
                        void **positionArrays,
@@ -54,17 +56,29 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
     destinations = std::vector<Ped::Twaypoint *>(destinationsInScenario.begin(),
                                                  destinationsInScenario.end());
     // Regions to manage, each region gets assigned to one thread.
-    int noOfRegions = 120 / REGION_HEIGHT; // total height is 120, need total height/height per region regions
-    regions = std::vector<
-        std::map<int, std::pair<Ped::Tregion *, bool>>>(noOfRegions);
-    for (int i = 0; i < regions.size(); i++)
+    int numRegionIndexes = NUM_SLICES * 160;
+    SliceIterators = (std::map<int, Ped::Tregion *>::iterator *)malloc(sizeof(std::map<int, Ped::Tregion *>::iterator) * NUM_SLICES);
+    regionsIndex = (Ped::Tregion **)malloc(sizeof(Ped::Tregion *) * numRegionIndexes);
+    regionsMap = std::map<int, Ped::Tregion *>();
+
+    for (int y = 0; y < NUM_SLICES; y++)
     {
-        Ped::Tregion *region = new Tregion(i << 8, 0, 159);
-        std::map<int, std::pair<Ped::Tregion *, bool>> regionMap;
-        regionMap[0] = std::make_pair(region, false);
-        regionMap[159] = std::make_pair(region, true);
-        regions[i] = regionMap;
+
+        Ped::Tregion *region = new Tregion(y << 8, 159);
+        for (int x = 0; x < 160; x++)
+        {
+            regionsIndex[y * 160 + x] = region;
+        }
+        regionsMap.insert(std::make_pair((y << 8), region));
     }
+    int index = 0;
+    for (auto iter = regionsMap.begin(); iter != regionsMap.end(); iter = std::next(iter))
+    {
+        auto itr = iter;
+        SliceIterators[index] = itr;
+        index++;
+    }
+
     for (int i = 0; i < agents.size(); i++)
     {
         Tregion *region = calculateRegion(agents[i]->getX(), agents[i]->getY());
@@ -90,35 +104,14 @@ void Ped::Model::freePosArrs()
 
 Ped::Tregion *Ped::Model::calculateRegion(int x, int y)
 {
-    // assuming horizontal stripes
-    int rem = y % REGION_HEIGHT;
-    if (rem < 0)
+    int y_pos = y / REGION_HEIGHT;
+    auto region = regionsIndex[y_pos * 160 + x];
+    if (region == NULL)
     {
-        rem += REGION_HEIGHT;
+        std::cerr << "Error: No region found for position (" << x << ", " << y << ")" << std::endl;
+        exit(1);
     }
-    // printf("%d\n", y);
-    // printf("%d\n", rem);
-    int index = ((y - rem) / REGION_HEIGHT); // Tog bort -1, tror att det ska vara så här
-    // printf("%d\n", index);
-    auto regionMap = regions[index];
-    Ped::Tregion *region;
-    while (true)
-    {
-        auto it = regionMap.find(x);
-        if (it != regionMap.end())
-        {
-            return it->second.first;
-        }
-        x++;
-        if (x >= 160)
-        {
-            throw std::runtime_error(
-                "calculateRegion: No region found for position(" //
-                + std::to_string(x)                              //
-                + ", " + std::to_string(y)                       //
-                + ")");                                          //
-        }
-    }
+    return region;
 }
 
 void Ped::Model::sequentialTick()
@@ -142,24 +135,6 @@ void Ped::Model::collisionSequentialTick()
 
         move(agent);
     }
-}
-
-std::vector<Ped::Tregion *> Ped::Model::collectRegions()
-{
-    std::vector<Ped::Tregion *> allRegions;
-    for (auto &regionMap : regions)
-    {
-        for (auto &regionPair : regionMap)
-        {
-            auto payload = regionPair.second;
-            if (!payload.second)
-            {
-                continue; // skip duplicate pointer to the same region
-            }
-            allRegions.push_back(payload.first);
-        }
-    }
-    return allRegions;
 }
 
 std::vector<std::pair<int, int>> calcAlternativePositions(Ped::Tagent *agent)
@@ -198,48 +173,68 @@ std::vector<std::pair<int, int>> calcAlternativePositions(Ped::Tagent *agent)
     return alternativePositions;
 }
 
+void Ped::Model::splitRegionIndex(Ped::Tregion *region)
+{
+
+    Ped::Tregion *newRegion = region->splitRegion();
+    int start = newRegion->getXStart();
+    int end = newRegion->getXEnd();
+    int id = newRegion->getId();
+    int sliceId = newRegion->getSlice();
+
+    for (int i = start; i <= end; i++)
+    {
+        regionsIndex[sliceId * 160 + i] = newRegion;
+    }
+    regionsMap.insert(std::make_pair(id, newRegion));
+}
+
+void Ped::Model::mergeRegionIndex(Ped::Tregion *region,
+                                  Ped::Tregion *nextRegion)
+{
+
+    int start = nextRegion->getXStart();
+    int end = nextRegion->getXEnd();
+    int id = nextRegion->getId();
+    int sliceId = nextRegion->getSlice();
+    region->mergeRegion(nextRegion);
+
+    for (int i = start; i <= end; i++)
+    {
+        regionsIndex[sliceId * 160 + i] = region;
+    }
+
+    regionsMap.erase(id);
+}
+
 void Ped::Model::dynamicResizeRegions()
 {
-#pragma omp parallel for schedule(dynamic) shared(regions)
-    for (int i = 0; i < regions.size(); i++)
+#pragma omp parallel for schedule(dynamic) shared(regionsMap, regionsIndex, SliceIterators)
+    for (int y = 0; y < NUM_SLICES; y++)
     {
-        auto currentMap = &regions[i];
-        auto itr = currentMap->begin();
-        while (itr != currentMap->end())
+        auto iter = SliceIterators[y];
+        auto itr = iter;
+        while (itr != regionsMap.end() && (itr->first >> 8) == y)
         {
-            if (!itr->second.second)
-            {
-                itr++;
-            }
-            Ped::Tregion *region = itr->second.first;
+            Ped::Tregion *region = itr->second;
 
             if (region->getAmountOfAgents() > REGION_HEIGHT * 6)
             {
-                Ped::Tregion *newRegion = region->splitRegion();
-                int border = newRegion->getXStart();
-                currentMap->insert(std::make_pair(border, std::make_pair(newRegion, false)));
-                currentMap->insert(std::make_pair(border - 1, std::make_pair(region, true)));
-                itr->second = make_pair(newRegion, true);
-                itr++;
+                this->splitRegionIndex(region);
+
                 itr++;
             }
             else if (region->getAmountOfAgents() < REGION_HEIGHT)
             {
                 auto nextItr = std::next(itr);
-                if (nextItr == currentMap->end())
+                if (nextItr == regionsMap.end() || (nextItr->first >> 8) != y)
                 {
                     break;
                 }
-                Ped::Tregion *nextRegion = nextItr->second.first;
+                Ped::Tregion *nextRegion = nextItr->second;
                 if (nextRegion->getAmountOfAgents() < REGION_HEIGHT)
                 {
-
-                    region->mergeRegion(nextRegion);
-
-                    currentMap->erase(nextItr);
-                    itr = currentMap->erase(itr);
-                    itr->second = make_pair(region, true);
-                    itr++;
+                    this->mergeRegionIndex(region, nextRegion);
                 }
             }
 
@@ -250,12 +245,18 @@ void Ped::Model::dynamicResizeRegions()
 
 void Ped::Model::parrallelCMove()
 {
-    std::vector<Ped::Tregion *> allRegions = this->collectRegions();
-#pragma omp parallel for schedule(dynamic) shared(regions)
-    for (int i = 0; i < allRegions.size(); i++)
+    auto allRegions = std::vector<Ped::Tregion *>(regionsMap.size());
+    int index = 0;
+    for (auto iter = regionsMap.begin(); iter != regionsMap.end(); iter++)
+    {
+        allRegions[index] = iter->second;
+        index++;
+    }
+
+#pragma omp parallel for schedule(dynamic) shared(regionsMap, regionsIndex)
+    for (Ped::Tregion *region : allRegions)
     {
 
-        Ped::Tregion *region = allRegions[i];
         Ped::Tagent *agent = region->getStart();
         while (agent != NULL)
         {
@@ -344,6 +345,7 @@ void Ped::Model::simdCompNextDesiredPos()
         Ped::Tagent *agent = agents[i];
         agent->setNextDestination();
     }
+
     for (int i = 0; i < agents.size(); i += 4)
     {
 

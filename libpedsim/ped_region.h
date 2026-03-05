@@ -16,10 +16,9 @@ namespace Ped
     class Tregion
     {
     public:
-        Tregion(int id, int xStart, int xEnd)
+        Tregion(int id, int xEnd)
         {
             this->id = id;
-            this->xStart = xStart;
             this->xEnd = xEnd;
         };
 
@@ -53,8 +52,9 @@ namespace Ped
 
         void mergeRegion(Ped::Tregion *otherRegion);
 
-        int getXStart() { return xStart; }
+        int getXStart() { return id & REGION_ID_X; }
         int getXEnd() { return xEnd; }
+        int getSlice() { return id >> 8; }
 
     private:
         int findMedianX();
@@ -65,7 +65,6 @@ namespace Ped
         atomic_int amountOfAgents{0};
 
         // int greaterRegion;
-        int xStart;
         int xEnd;
         // const string id = get_uuid();
         int id;
