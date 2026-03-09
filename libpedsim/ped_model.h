@@ -35,7 +35,8 @@ namespace Ped
         SEQ,
         COLLISION_SEQ,
         COLLISION_OMP,
-        COLLISION_OMP_SIMD
+        COLLISION_OMP_SIMD,
+        COLLISION_OMP_HEATMAP
     };
 
     class Model
