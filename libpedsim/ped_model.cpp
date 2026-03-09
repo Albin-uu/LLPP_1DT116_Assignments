@@ -79,9 +79,13 @@ void Ped::Model::setup(std::vector<Ped::Tagent *> agentsInScenario,
     this->implementation = implementation;
 
     // Set up heatmap (relevant for Assignment 4)
-    // Uncomment and comment the other to switch between seq and cuda versions.
-    // setupHeatmapSeq();
-    setupHeatmapCuda();
+    if(implementation == COLLISION_OMP_HEATMAP){
+        setupHeatmapCuda();
+    }
+    else
+    {
+        setupHeatmapSeq();
+    }
 }
 
 void Ped::Model::freePosArrs()
@@ -312,6 +316,7 @@ void Ped::Model::collisionOMPTick()
         agent->setHasMoved(false);
         agent->computeNextDesiredPosition();
     }
+
     updateHeatmapSeq();
 
     if (this->ticks % 400 == 40)
@@ -505,12 +510,16 @@ void Ped::Model::tick()
     }
     else if (this->implementation == COLLISION_OMP)
     {
-        //collisionOMPTick();
-        collisionOMPHMTick(); // Temp for cuda, assignement 4
+        collisionOMPTick();
+        //collisionOMPTick(); // Temp for cuda, assignement 4
     }
     else if (this->implementation == COLLISION_OMP_SIMD)
     {
         collisionOMPSIMDTick();
+    }
+    else if (this->implementation == COLLISION_OMP_HEATMAP)
+    {
+        collisionOMPHMTick();
     }
     else
     {
