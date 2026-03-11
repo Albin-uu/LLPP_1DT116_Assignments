@@ -33,6 +33,7 @@ void Ped::Model::setupHeatmapSeq()
 		scaled_heatmap[i] = shm + SCALED_SIZE*i;
 		blurred_heatmap[i] = bhm + SCALED_SIZE*i;
 	}
+
 }
 
 // Updates the heatmap according to the agent positions

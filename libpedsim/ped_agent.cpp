@@ -57,10 +57,6 @@ void Ped::Tagent::computeNextDesiredPosition()
 		*desiredPositionX = (int)round(*x + diffX / len);
 		*desiredPositionY = (int)round(*y + diffY / len);
 	}
-	// printf("x: %d\n", *x);
-	// printf("diff: %f\n", diffX);
-	// printf("len: %f\n", len);
-	// printf("desiredpos: %d\n", *desiredPositionX);
 }
 
 Ped::Tagent *Ped::Tagent::getNextAgent()

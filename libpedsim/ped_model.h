@@ -67,8 +67,11 @@ namespace Ped
         ~Model();
 
         // Returns the heatmap visualizing the density of agents
-        int const *const *getHeatmap() const { return blurred_heatmap; };
+        const int *const *getHeatmap() const { return blurred_heatmap; };
         int getHeatmapSize() const;
+        float getSumSeconds() const {return sum_seconds;};
+        float getScaleSeconds() const {return scale_seconds;};
+        float getBlurSeconds() const {return blur_seconds;};
 
     private:
         std::vector<Ped::Tregion *> collectRegions();
@@ -137,17 +140,26 @@ namespace Ped
 
         // The heatmap representing the density of agents
         int **heatmap;
+        int *hm;
 
         // The scaled heatmap that fits to the view
         int **scaled_heatmap;
+        int *shm;
 
         // The final heatmap: blurred and scaled to fit the view
         int **blurred_heatmap;
+        int *bhm;
 
         void setupHeatmapSeq();
         void setupHeatmapCuda();
         void updateHeatmapSeq();
         void updateHeatmapCuda(int *agentsDesiredX, int *agentsDesiredY, int agentCount);
+        float sum_seconds;
+float sum_seconds_new;
+float scale_seconds;
+float scale_seconds_new;
+float blur_seconds;
+float blur_seconds_new;
     };
 } // namespace Ped
 #endif
