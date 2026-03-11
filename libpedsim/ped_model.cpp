@@ -511,7 +511,6 @@ void Ped::Model::tick()
     else if (this->implementation == COLLISION_OMP)
     {
         collisionOMPTick();
-        //collisionOMPTick(); // Temp for cuda, assignement 4
     }
     else if (this->implementation == COLLISION_OMP_SIMD)
     {
