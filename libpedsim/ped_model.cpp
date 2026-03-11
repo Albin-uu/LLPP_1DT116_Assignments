@@ -106,10 +106,7 @@ Ped::Tregion *Ped::Model::calculateRegion(int x, int y)
     {
         rem += REGION_HEIGHT;
     }
-    // printf("%d\n", y);
-    // printf("%d\n", rem);
     int index = ((y - rem) / REGION_HEIGHT); // Tog bort -1, tror att det ska vara så här
-    // printf("%d\n", index);
     auto regionMap = regions[index];
     Ped::Tregion *region;
     while (true)
@@ -326,7 +323,6 @@ void Ped::Model::collisionOMPTick()
 
     this->parrallelCMove();
 }
-
 void Ped::Model::collisionOMPHMTick()
 {
     this->ticks++;
@@ -343,11 +339,6 @@ void Ped::Model::collisionOMPHMTick()
     }
 
     updateHeatmapCuda(agentsDesiredX, agentsDesiredY, agents.size());
-
-    if (this->ticks % 400 == 40)
-    {
-        dynamicResizeRegions();
-    }
 
     this->parrallelCMove();
 }
